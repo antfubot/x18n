@@ -1,0 +1,23 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["pnpm-lock.yaml", "tsconfig.base.json"],
+  "tasks": {
+    "codegen": {
+      "outputLogs": "new-only",
+      "cache": false
+    },
+    "build": {
+      "outputLogs": "new-only",
+      "dependsOn": ["^build", "codegen"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {
+      "outputLogs": "new-only",
+      "dependsOn": ["codegen"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

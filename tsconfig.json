@@ -1,14 +1,4 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "lib": ["ESNext"],
-    "module": "Preserve",
-    "strict": true,
-    "strictNullChecks": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "verbatimModuleSyntax": true,
-    "skipDefaultLibCheck": true,
-    "skipLibCheck": true
-  }
+  "extends": "./tsconfig.base.json",
+  "include": ["*.ts", "test"]
 }

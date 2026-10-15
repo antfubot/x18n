@@ -1,0 +1,76 @@
+{
+  "publisher": "antfu",
+  "name": "x18n-vscode",
+  "displayName": "x18n",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Manage and view i18n files of any project, for humans and agents",
+  "author": "Anthony Fu <anthonyfu117@hotmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/antfu/x18n#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/antfu/x18n.git",
+    "directory": "packages/vscode"
+  },
+  "bugs": "https://github.com/antfu/x18n/issues",
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/index.cjs",
+  "files": [
+    "LICENSE.md",
+    "dist/*"
+  ],
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "activationEvents": [
+    "workspaceContains:**/x18n.config.*"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "x18n.restartServer",
+        "title": "Restart Language Server",
+        "category": "x18n"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "x18n",
+      "properties": {
+        "x18n.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Trace the communication between VS Code and the x18n language server."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch --sourcemap",
+    "codegen": "vscode-ext-gen --scope x18n --output src/generated/meta.ts",
+    "typecheck": "tsc --noEmit",
+    "vscode:prepublish": "pnpm run build",
+    "ext:package": "vsce package --no-dependencies",
+    "ext:publish": "vsce publish --no-dependencies && ovsx publish --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/vscode": "catalog:types",
+    "@vscode/vsce": "catalog:vscode",
+    "@x18n/lsp": "workspace:*",
+    "ovsx": "catalog:vscode",
+    "reactive-vscode": "catalog:vscode",
+    "vscode-ext-gen": "catalog:vscode",
+    "vscode-languageclient": "catalog:vscode",
+    "vscode-languageserver": "catalog:deps"
+  }
+}

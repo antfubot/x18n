@@ -1,35 +1,86 @@
 ignoreWorkspaceRootCheck: true
 catalogMode: prefer
+# The `comark-docs` layer (docs site theme, installed from GitHub) pins its
+# `comark` deps to pkg.pr.new snapshot URLs, which pnpm blocks by default.
+blockExoticSubdeps: false
 
 minimumReleaseAgeExcludePrune: true
 minimumReleaseAgeExclude:
   - '@antfu/skills@0.1.0'
+  - devframe@1.2.5
 
 trustPolicy: no-downgrade
+# Older releases of Nuxt and comark-docs dependencies predate provenance publishing;
+# only releases from the last 30 days must keep their trust level.
+trustPolicyIgnoreAfter: 43200
+# Recent releases that dropped provenance (cssnano monorepo, comark-docs deps).
+trustPolicyExclude:
+  - stylehacks@9.0.8
+  - postcss-unique-selectors@9.0.6
+  - postcss-reduce-transforms@9.0.6
+  - postcss-reduce-initial@9.0.7
+  - postcss-ordered-values@9.0.9
+  - postcss-normalize-whitespace@9.0.8
+  - postcss-normalize-url@10.0.0
+  - postcss-normalize-unicode@9.1.1
+  - postcss-normalize-timing-functions@9.0.7
+  - postcss-normalize-string@9.0.7
+  - postcss-normalize-repeat-style@9.0.7
+  - postcss-normalize-positions@9.0.8
+  - postcss-normalize-display-values@9.0.7
+  - postcss-normalize-charset@9.0.6
+  - postcss-minify-selectors@9.0.8
+  - postcss-minify-params@9.1.0
+  - postcss-minify-gradients@9.0.8
+  - postcss-minify-font-values@9.0.9
+  - postcss-merge-rules@9.1.5
+  - postcss-merge-longhand@9.4.0
+  - postcss-discard-overridden@9.0.6
+  - postcss-discard-empty@9.0.8
+  - postcss-discard-duplicates@9.0.7
+  - postcss-discard-comments@9.0.8
+  - postcss-convert-values@9.1.0
+  - postcss-colormin@9.0.8
+  - cssnano-utils@9.0.0
+  - cssnano-preset-default@9.8.0
+  - cssnano@9.8.0
 
 update:
   ignoreDeps:
     - typescript@7
 
+strictPeerDependencies: false
+shamefullyHoist: true
 shellEmulator: true
 
 packages:
-  - playground
-  - docs
   - packages/*
-  - examples/*
+  - docs
+
+# nuxt-og-image (via comark-docs) requires a satori without GHSA-wx4j-mvgx-mqwp.
+overrides:
+  satori: 'catalog:docs'
 
 allowBuilds:
+  '@parcel/watcher': false
+  '@vscode/vsce-sign': true
   esbuild: true
+  keytar: false
   simple-git-hooks: true
+  unrs-resolver: true
+  vue-demi: true
 
 catalogs:
   agentic:
     '@antfu/skills': ^0.1.0
     skills: ^1.7.2
+  build:
+    nuxt: ^4.6.1
+    tsdown: ^0.23.0
+    turbo: ^2.11.8
+    vue-tsc: ^3.3.13
   cli:
     '@antfu/eslint-config': ^9.5.1
-    '@antfu/ni': ^30.6.0
     bumpp: ^12.3.0
     eslint: ^10.11.0
     eslint-plugin-slop: ^0.1.3
@@ -39,15 +90,32 @@ catalogs:
     publint: ^0.3.24
     simple-git-hooks: ^2.14.0
     taze: ^21.2.0
-    tsdown: ^0.23.0
     tsx: ^4.23.15
     typescript: ^6.0.3
     vite: ^8.3.1
+  deps:
+    cac: ^7.1.0
+    devframe: ^1.2.5
+    vscode-languageserver: ^10.1.2
+  docs:
+    comark-docs: github:comarkdown/comark-docs#f97dc864b0aa702d54c600f868589b7a2c185b3a
+    satori: ^0.35.0
+  frontend:
+    '@unocss/nuxt': ^66.11.0
+    '@unocss/reset': ^66.11.0
+    unocss: ^66.11.0
   inlined:
     '@antfu/utils': ^9.3.0
   testing:
-    tsdown-stale-guard: ^0.1.3
     tsnapi: ^1.5.0
     vitest: ^5.0.2
+    vscode-jsonrpc: ^9.0.0
   types:
     '@types/node': ^26.6.3
+    '@types/vscode': ~1.100.0
+  vscode:
+    '@vscode/vsce': ^4.0.0
+    ovsx: ^1.2.0
+    reactive-vscode: ^1.0.2
+    vscode-ext-gen: ^1.6.0
+    vscode-languageclient: ^10.1.2

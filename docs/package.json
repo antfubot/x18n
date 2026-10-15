@@ -1,0 +1,14 @@
+{
+  "name": "@x18n/docs",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt dev --host",
+    "docs:build": "nuxt build",
+    "docs:serve": "nuxt preview"
+  },
+  "dependencies": {
+    "comark-docs": "catalog:docs",
+    "nuxt": "catalog:build"
+  }
+}

@@ -1,42 +1,22 @@
-# pkg-placeholder
+# x18n
 
-[![npm version][npm-version-src]][npm-version-href]
-[![npm downloads][npm-downloads-src]][npm-downloads-href]
-[![bundle][bundle-src]][bundle-href]
-[![JSDocs][jsdocs-src]][jsdocs-href]
-[![License][license-src]][license-href]
+Manage and view the i18n files of any project, for humans and agents.
 
-_description_
+x18n takes the ideas of [i18n-ally](https://github.com/lokalise/i18n-ally) and rebuilds them as layers that work outside VS Code:
 
-## Note for Developers
+| Package | What it is |
+| --- | --- |
+| [`@x18n/core`](./packages/core) | Engine that runs in Node and in the browser: domain model, plugin API, analysis, edits |
+| [`@x18n/builtins`](./packages/builtins) | Built-in plugins: formats, locale finders, usage scanners, checks, reporters, presets for popular i18n libraries |
+| [`@x18n/node`](./packages/node) | Node.js host: file system, config and plugin loading |
+| [`x18n`](./packages/cli) | The CLI, with JSON output for CI and agents |
+| [`@x18n/lsp`](./packages/lsp) | Language server for any LSP editor |
+| [`@x18n/ui`](./packages/ui) | devframe UI: local dev server, static report, in-browser workspace, VS Code panel |
+| [`x18n-vscode`](./packages/vscode) | VS Code extension on top of the language server |
 
-This starter recommands using [npm Trusted Publisher](https://github.com/e18e/ecosystem-issues/issues/201), where the release is done on CI to ensure the security of the packages.
-
-To do so, you need to run `pnpm publish` manually for the very first time to create the package on npm, and then go to `https://www.npmjs.com/package/<your-package-name>/access` to set the connection to your GitHub repo.
-
-Then for the future releases, you can run `pnpm run release` to do the release and the GitHub Actions will take care of the release process.
-
-## Sponsors
-
-<p align="center">
-  <a href="https://cdn.jsdelivr.net/gh/antfu/static/sponsors.svg">
-    <img src="https://cdn.jsdelivr.net/gh/antfu/static/sponsors.svg" alt="Sponsors"/>
-  </a>
-</p>
+> [!NOTE]
+> x18n is in early development. Nothing is published yet. Read the [plan](./plans/README.md).
 
 ## License
 
-[MIT](./LICENSE) License © [Anthony Fu](https://github.com/antfu)
-
-<!-- Badges -->
-
-[npm-version-src]: https://img.shields.io/npm/v/pkg-placeholder?style=flat&colorA=080f12&colorB=1fa669
-[npm-version-href]: https://npmx.dev/package/pkg-placeholder
-[npm-downloads-src]: https://img.shields.io/npm/dm/pkg-placeholder?style=flat&colorA=080f12&colorB=1fa669
-[npm-downloads-href]: https://npmx.dev/package/pkg-placeholder
-[bundle-src]: https://img.shields.io/bundlephobia/minzip/pkg-placeholder?style=flat&colorA=080f12&colorB=1fa669&label=minzip
-[bundle-href]: https://bundlephobia.com/result?p=pkg-placeholder
-[license-src]: https://img.shields.io/github/license/antfu/pkg-placeholder.svg?style=flat&colorA=080f12&colorB=1fa669
-[license-href]: https://github.com/antfu/pkg-placeholder/blob/main/LICENSE
-[jsdocs-src]: https://img.shields.io/badge/jsdocs-reference-080f12?style=flat&colorA=080f12&colorB=1fa669
-[jsdocs-href]: https://www.jsdocs.io/package/pkg-placeholder
+[MIT](./LICENSE.md) License © [Anthony Fu](https://github.com/antfu)

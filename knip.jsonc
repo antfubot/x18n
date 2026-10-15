@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
+  // tsnapi writes these API snapshots; they are compared, never imported.
+  "ignore": ["test/__snapshots__/tsnapi/**"],
+  "ignoreDependencies": ["@antfu/utils", "taze", "@antfu/skills"],
+  "workspaces": {
+    "packages/ui": {
+      // `@unocss/reset` is loaded through the `css` option of `nuxt.config.ts`;
+      // `vue-tsc` is run by `nuxt typecheck`. Neither is imported.
+      "ignoreDependencies": ["@unocss/reset", "vue-tsc"]
+    }
+  }
+}

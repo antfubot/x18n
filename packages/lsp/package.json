@@ -1,0 +1,42 @@
+{
+  "name": "@x18n/lsp",
+  "type": "module",
+  "version": "0.0.0",
+  "description": "x18n language server for any LSP editor",
+  "author": "Anthony Fu <anthonyfu117@hotmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/antfu/x18n#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/antfu/x18n.git",
+    "directory": "packages/lsp"
+  },
+  "bugs": "https://github.com/antfu/x18n/issues",
+  "sideEffects": false,
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.mts",
+  "bin": {
+    "x18n-lsp": "./bin.mjs"
+  },
+  "files": [
+    "bin.mjs",
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "vscode-languageserver": "catalog:deps"
+  },
+  "devDependencies": {
+    "vscode-jsonrpc": "catalog:testing"
+  }
+}

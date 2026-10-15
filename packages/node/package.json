@@ -1,0 +1,35 @@
+{
+  "name": "@x18n/node",
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Node.js host for x18n: file system access, config and plugin loading",
+  "author": "Anthony Fu <anthonyfu117@hotmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/antfu/x18n#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/antfu/x18n.git",
+    "directory": "packages/node"
+  },
+  "bugs": "https://github.com/antfu/x18n/issues",
+  "sideEffects": false,
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@x18n/core": "workspace:*"
+  }
+}

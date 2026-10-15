@@ -12,3 +12,9 @@ node_modules
 temp
 .eslintcache
 .agents/skills
+.turbo
+.nuxt
+.output
+.data
+*.vsix
+packages/vscode/src/generated
