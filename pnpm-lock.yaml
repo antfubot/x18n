@@ -269,6 +269,9 @@ catalogs:
     vscode-languageserver:
       specifier: ^10.1.2
       version: 10.1.2
+    vscode-languageserver-textdocument:
+      specifier: ^1.0.15
+      version: 1.0.15
     yaml:
       specifier: ^2.9.1
       version: 2.9.1
@@ -468,9 +471,18 @@ importers:
 
   packages/lsp:
     dependencies:
+      '@x18n/core':
+        specifier: workspace:*
+        version: link:../core
+      '@x18n/node':
+        specifier: workspace:*
+        version: link:../node
       vscode-languageserver:
         specifier: catalog:deps
         version: 10.1.2
+      vscode-languageserver-textdocument:
+        specifier: catalog:deps
+        version: 1.0.15
     devDependencies:
       vscode-jsonrpc:
         specifier: catalog:testing

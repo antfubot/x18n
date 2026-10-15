@@ -1,8 +1,8 @@
 import type { Setup } from '../resolve'
 import type { FileEvent, Host } from '../types/host'
-import type { KeyString, LocaleCode, LocaleInfo, Message, MessageTree, NodeRange, Resource, TextRange, Usage } from '../types/model'
+import type { KeyString, LocaleCode, LocaleInfo, Message, MessageTree, Resource, TextRange, Usage } from '../types/model'
 import type { HardString, ScanResult, SourceFile } from '../types/plugin'
-import type { Analysis, KeyInfo, KeyTarget, Project, ProjectChange, ProjectExplanation, UsageMatch } from '../types/project'
+import type { Analysis, KeyInfo, KeyTarget, Project, ProjectChange, ProjectExplanation, ResourceNode, UsageMatch } from '../types/project'
 import type { ResourceState } from './analysis'
 import type { UsageResolver } from './usages'
 import { isX18nError, X18nError } from '../errors'
@@ -296,7 +296,7 @@ export function createProject(options: CreateProjectOptions): Project {
     readonly revision: number
     readonly messages: Map<KeyString, Map<LocaleCode, Message[]>>
     readonly keyPaths: Map<KeyString, { namespace: string | undefined, path: string[] }>
-    readonly nodes: Map<string, { key: KeyString, range: NodeRange, leaf: boolean }[]>
+    readonly nodes: Map<string, ResourceNode[]>
     readonly parents: Set<KeyString>
     readonly usages: Usage[]
     readonly usagesByKey: Map<KeyString, Usage[]>
@@ -308,7 +308,7 @@ export function createProject(options: CreateProjectOptions): Project {
   function buildIndex(): Index {
     const messages = new Map<KeyString, Map<LocaleCode, Message[]>>()
     const keyPaths = new Map<KeyString, { namespace: string | undefined, path: string[] }>()
-    const nodes = new Map<string, { key: KeyString, range: NodeRange, leaf: boolean }[]>()
+    const nodes = new Map<string, ResourceNode[]>()
     const parents = new Set<KeyString>()
     for (const state of resourceStates.values()) {
       const { resource } = state
@@ -322,7 +322,7 @@ export function createProject(options: CreateProjectOptions): Project {
           const raw = state.ranges.get(pathId(path))
           const range = raw ? { key: shift(raw.key), value: shift(raw.value) } : undefined
           if (range)
-            fileNodes.push({ key, range, leaf: isMessageLeaf(child) })
+            fileNodes.push({ key, range, leaf: isMessageLeaf(child), locale: resource.locale, path: resource.path })
           if (isMessageLeaf(child)) {
             const byLocale = messages.get(key) ?? new Map<LocaleCode, Message[]>()
             messages.set(key, byLocale)
@@ -482,7 +482,7 @@ export function createProject(options: CreateProjectOptions): Project {
   function keyAt(path: string, offset: number): KeyTarget | undefined {
     const fileNodes = idx().nodes.get(path)
     if (fileNodes) {
-      let best: { key: KeyString, range: NodeRange, leaf: boolean } | undefined
+      let best: ResourceNode | undefined
       for (const node of fileNodes) {
         const hit = rangeContains(node.range.key, offset) || (node.leaf && rangeContains(node.range.value, offset))
         if (hit && (!best || node.range.key.start > best.range.key.start))
@@ -657,6 +657,11 @@ export function createProject(options: CreateProjectOptions): Project {
     },
     usages: usageMatches,
     keyAt,
+    nodes: path => idx().nodes.get(path) ?? [],
+    locations(key) {
+      const order = new Map(locales.map((locale, i) => [locale, i]))
+      return [...idx().nodes.values()].flat().filter(node => node.key === key).sort((a, b) => (order.get(a.locale) ?? 0) - (order.get(b.locale) ?? 0))
+    },
     keySlots: path => files.get(path)?.result.keySlots ?? [],
     hardStrings: path => [...files].filter(([p]) => path === undefined || p === path).flatMap(([p, state]) => (state.result.hardStrings ?? []).map(h => ({ ...h, path: p }))),
     analyze: (): Analysis => analyzer.analyze(),

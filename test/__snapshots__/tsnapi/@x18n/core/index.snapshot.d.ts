@@ -467,6 +467,8 @@ export interface Project {
   readonly parseKey: (_: string) => KeyString;
   readonly usages: (_?: UsageQuery) => UsageMatch[];
   readonly keyAt: (_: string, _: number) => KeyTarget | undefined;
+  readonly nodes: (_: string) => readonly ResourceNode[];
+  readonly locations: (_: KeyString) => readonly ResourceNode[];
   readonly keySlots: (_: string) => readonly TextRange[];
   readonly hardStrings: (_?: string) => readonly (HardString & {
     readonly path: string;
@@ -631,6 +633,13 @@ export interface ResourceCandidate {
   readonly format?: string | undefined;
   readonly block?: ResourceBlock | undefined;
   readonly readonly?: boolean | undefined;
+}
+export interface ResourceNode {
+  readonly key: KeyString;
+  readonly range: NodeRange;
+  readonly leaf: boolean;
+  readonly locale: LocaleCode;
+  readonly path: string;
 }
 export interface ResourceSpec {
   readonly pattern: string;

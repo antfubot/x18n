@@ -34,7 +34,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "vscode-languageserver": "catalog:deps"
+    "@x18n/core": "workspace:*",
+    "@x18n/node": "workspace:*",
+    "vscode-languageserver": "catalog:deps",
+    "vscode-languageserver-textdocument": "catalog:deps"
   },
   "devDependencies": {
     "vscode-jsonrpc": "catalog:testing"

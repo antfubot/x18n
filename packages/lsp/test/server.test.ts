@@ -1,37 +1,164 @@
+import type { MessageConnection } from 'vscode-jsonrpc/node'
+import type { Location, PublishDiagnosticsParams, WorkspaceEdit } from 'vscode-languageserver/node'
+import { cp, mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
-import { afterEach, describe, expect, it } from 'vitest'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { applyTextEdits, createLineIndex } from '@x18n/core'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createMessageConnection, StreamMessageReader, StreamMessageWriter } from 'vscode-jsonrpc/node'
 import { createConnection, InitializeRequest, TextDocumentSyncKind } from 'vscode-languageserver/node'
 import { version } from '../package.json' with { type: 'json' }
-import { setupServer } from '../src'
+import { methods, setupServer } from '../src'
 
+const fixtures = fileURLToPath(new URL('../../../test/fixtures/', import.meta.url))
+let root: string
+let client: MessageConnection
+const diagnostics = new Map<string, PublishDiagnosticsParams['diagnostics']>()
 const disposers: (() => void)[] = []
 
-afterEach(() => {
-  disposers.splice(0).forEach(dispose => dispose())
-})
+const uri = (path: string): string => pathToFileURL(join(root, path)).href
 
-function connect() {
+async function text(path: string): Promise<string> {
+  return readFile(join(root, path), 'utf8')
+}
+
+async function position(path: string, needle: string, delta = 1): Promise<{ line: number, character: number }> {
+  const content = await text(path)
+  return createLineIndex(content).position(content.indexOf(needle) + delta)
+}
+
+function relativeOf(location: Location): string {
+  return fileURLToPath(location.uri).slice(root.length + 1)
+}
+
+beforeAll(async () => {
+  root = await mkdtemp(join(tmpdir(), 'x18n-lsp-'))
+  await cp(join(fixtures, 'vue-i18n'), root, { recursive: true })
   const toServer = new PassThrough()
   const toClient = new PassThrough()
   const server = createConnection(new StreamMessageReader(toServer), new StreamMessageWriter(toClient))
   setupServer(server)
   server.listen()
-  const client = createMessageConnection(new StreamMessageReader(toClient), new StreamMessageWriter(toServer))
+  client = createMessageConnection(new StreamMessageReader(toClient), new StreamMessageWriter(toServer))
+  client.onNotification('textDocument/publishDiagnostics', (params: PublishDiagnosticsParams) => {
+    diagnostics.set(params.uri, params.diagnostics)
+  })
   client.listen()
   disposers.push(() => client.dispose(), () => server.dispose())
-  return client
-}
+  const result = await client.sendRequest(InitializeRequest.type, { processId: null, rootUri: pathToFileURL(root).href, capabilities: {} })
+  expect(result.serverInfo).toEqual({ name: 'x18n', version })
+  expect(result.capabilities.textDocumentSync).toBe(TextDocumentSyncKind.Incremental)
+  await client.sendNotification('initialized', {})
+  await client.sendRequest(methods.projects)
+})
+
+afterAll(async () => {
+  disposers.splice(0).forEach(dispose => dispose())
+  await rm(root, { recursive: true, force: true })
+})
 
 describe('language server', () => {
-  it('answers initialize with server info and sync kind', async () => {
-    const client = connect()
-    const result = await client.sendRequest(InitializeRequest.type, {
-      processId: null,
-      rootUri: null,
-      capabilities: {},
+  it('lists projects through x18n/projects', async () => {
+    const projects: { name: string, locales: { code: string }[] }[] = await client.sendRequest(methods.projects)
+    expect(projects[0]!.locales.map(l => l.code)).toEqual(['en', 'de'])
+  })
+
+  it('goes to the source-locale entry from a usage', async () => {
+    const result: Location[] = await client.sendRequest('textDocument/definition', { textDocument: { uri: uri('src/App.vue') }, position: await position('src/App.vue', 'nav.home') })
+    expect(result.map(relativeOf)).toEqual(['src/locales/en.json'])
+    expect(result[0]!.range.start).toEqual(await position('src/locales/en.json', '"home": "Home"'))
+  })
+
+  it('lists every locale entry as implementations', async () => {
+    const result: Location[] = await client.sendRequest('textDocument/implementation', { textDocument: { uri: uri('src/App.vue') }, position: await position('src/App.vue', 'nav.home') })
+    expect(result.map(relativeOf)).toEqual(['src/locales/en.json', 'src/locales/de.json'])
+  })
+
+  it('finds references from a resource entry, including prefix usages', async () => {
+    const result: Location[] = await client.sendRequest('textDocument/references', {
+      textDocument: { uri: uri('src/locales/en.json') },
+      position: await position('src/locales/en.json', '"home": {', 2),
+      context: { includeDeclaration: true },
     })
-    expect(result.serverInfo).toEqual({ name: 'x18n', version })
-    expect(result.capabilities.textDocumentSync).toBe(TextDocumentSyncKind.Incremental)
+    expect(result.map(relativeOf)).toContain('src/App.vue')
+  })
+
+  it('returns null from prepareRename outside keys', async () => {
+    const result = await client.sendRequest('textDocument/prepareRename', { textDocument: { uri: uri('src/main.ts') }, position: { line: 0, character: 3 } })
+    expect(result).toBeNull()
+  })
+
+  it('renames from a usage across locales and code', async () => {
+    const pos = await position('src/App.vue', 'nav.home')
+    const prepared: { placeholder: string } = await client.sendRequest('textDocument/prepareRename', { textDocument: { uri: uri('src/App.vue') }, position: pos })
+    expect(prepared.placeholder).toBe('nav.home')
+    const edit: WorkspaceEdit = await client.sendRequest('textDocument/rename', { textDocument: { uri: uri('src/App.vue') }, position: pos, newName: 'nav.start' })
+    const changed = new Map<string, string>()
+    for (const change of edit.documentChanges ?? []) {
+      if (!('textDocument' in change))
+        continue
+      const path = fileURLToPath(change.textDocument.uri).slice(root.length + 1)
+      const content = await text(path)
+      const index = createLineIndex(content)
+      changed.set(path, applyTextEdits(content, change.edits.map(e => ({ range: { start: index.offset(e.range.start), end: index.offset(e.range.end) }, text: 'newText' in e ? e.newText : '' }))))
+    }
+    expect([...changed.keys()].sort()).toEqual(['src/App.vue', 'src/locales/de.json', 'src/locales/en.json'])
+    expect(changed.get('src/App.vue')).toContain('t(\'nav.start\')')
+    expect(changed.get('src/locales/de.json')).toContain('"start": "Start"')
+  })
+
+  it('refuses a rename onto an existing key', async () => {
+    const pos = await position('src/App.vue', 'nav.home')
+    await expect(client.sendRequest('textDocument/rename', { textDocument: { uri: uri('src/App.vue') }, position: pos, newName: 'nav.about' })).rejects.toThrow(/already exists/)
+  })
+
+  it('publishes the diagnostics of x18n check', async () => {
+    await expect.poll(() => diagnostics.get(uri('src/App.vue'))?.map(d => d.code)).toEqual(['missing-key'])
+    expect(diagnostics.get(uri('src/locales/de.json'))?.map(d => d.code)).toEqual(['placeholder-mismatch', 'empty-translation'])
+  })
+
+  it('hovers with values per locale', async () => {
+    const hover: { contents: { value: string } } = await client.sendRequest('textDocument/hover', { textDocument: { uri: uri('src/App.vue') }, position: await position('src/App.vue', 'app.greeting') })
+    expect(hover.contents.value).toContain('| 🇺🇸 en | Hello {name} |')
+  })
+
+  it('completes keys in key slots', async () => {
+    const items: { label: string }[] = await client.sendRequest('textDocument/completion', { textDocument: { uri: uri('src/App.vue') }, position: await position('src/App.vue', 'nav.home') })
+    expect(items.map(i => i.label)).toContain('pages.home.title')
+  })
+
+  it('lists the key tree of a resource as document symbols', async () => {
+    const symbols: { name: string, children: { name: string }[] }[] = await client.sendRequest('textDocument/documentSymbol', { textDocument: { uri: uri('src/locales/en.json') } })
+    expect(symbols.map(s => s.name)).toEqual(['app', 'nav', 'pages', 'unused', 'linked'])
+    expect(symbols[0]!.children.map(c => c.name)).toEqual(['title', 'greeting'])
+  })
+
+  it('answers x18n/keyAt and x18n/decorations', async () => {
+    const keyAt: { key: string, type: string } = await client.sendRequest(methods.keyAt, { uri: uri('src/locales/en.json'), position: await position('src/locales/en.json', '"pages"', 2) })
+    expect(keyAt).toMatchObject({ key: 'pages', type: 'subtree' })
+    const result: { decorations: { key: string, state: string }[] } = await client.sendRequest(methods.decorations, { uri: uri('src/App.vue') })
+    expect(result.decorations.map(d => `${d.key}:${d.state}`)).toContain('app.titel:missing')
+  })
+
+  it('re-scans an open document on change', async () => {
+    const content = await text('src/main.ts')
+    await client.sendNotification('textDocument/didOpen', { textDocument: { uri: uri('src/main.ts'), languageId: 'typescript', version: 1, text: content } })
+    await client.sendNotification('textDocument/didChange', { textDocument: { uri: uri('src/main.ts'), version: 2 }, contentChanges: [{ text: `${content}\ni18n.global.t('brand.new')\n` }] })
+    await expect.poll(() => diagnostics.get(uri('src/main.ts'))?.map(d => d.message), { timeout: 3000 }).toEqual(['"brand.new" is not defined in en.'])
+  })
+})
+
+describe('x18n-lsp binary', () => {
+  it('answers initialize over stdio', async () => {
+    const { spawn } = await import('node:child_process')
+    const child = spawn(process.execPath, [fileURLToPath(new URL('../bin.mjs', import.meta.url)), '--stdio'], { stdio: 'pipe' })
+    const connection = createMessageConnection(new StreamMessageReader(child.stdout), new StreamMessageWriter(child.stdin))
+    connection.listen()
+    const result = await connection.sendRequest(InitializeRequest.type, { processId: null, rootUri: null, capabilities: {} })
+    expect(result.serverInfo?.name).toBe('x18n')
+    connection.dispose()
+    child.kill()
   })
 })

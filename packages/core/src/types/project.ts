@@ -10,6 +10,7 @@ import type {
   LocaleCode,
   LocaleInfo,
   Message,
+  NodeRange,
   Resource,
   TextEdit,
   TextRange,
@@ -55,6 +56,16 @@ export interface KeyInfo {
 export type KeyTarget
   = | { readonly type: 'key', readonly key: KeyString, readonly range: TextRange, readonly source: 'usage' | 'resource', readonly usage?: Usage | undefined }
     | { readonly type: 'subtree', readonly key: KeyString, readonly range: TextRange, readonly source: 'resource' }
+
+/** A key or parent node in a resource file, with its ranges. */
+export interface ResourceNode {
+  readonly key: KeyString
+  readonly range: NodeRange
+  /** False for parent objects. */
+  readonly leaf: boolean
+  readonly locale: LocaleCode
+  readonly path: string
+}
 
 export interface Analysis {
   readonly revision: number
@@ -149,6 +160,10 @@ export interface Project {
   readonly parseKey: (input: string) => KeyString
   readonly usages: (query?: UsageQuery) => UsageMatch[]
   readonly keyAt: (path: string, offset: number) => KeyTarget | undefined
+  /** Key and parent nodes of a resource file, in file order. */
+  readonly nodes: (path: string) => readonly ResourceNode[]
+  /** The nodes of a key (or parent) in every locale, source locale first. */
+  readonly locations: (key: KeyString) => readonly ResourceNode[]
   /** Completion positions in a source file. */
   readonly keySlots: (path: string) => readonly TextRange[]
   readonly hardStrings: (path?: string) => readonly (HardString & { readonly path: string })[]

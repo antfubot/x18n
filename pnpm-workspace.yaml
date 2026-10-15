@@ -109,6 +109,7 @@ catalogs:
     tinyglobby: ^0.2.17
     valibot: ^1.5.0
     vscode-languageserver: ^10.1.2
+    vscode-languageserver-textdocument: ^1.0.15
     yaml: ^2.9.1
   docs:
     comark-docs: github:comarkdown/comark-docs#f97dc864b0aa702d54c600f868589b7a2c185b3a

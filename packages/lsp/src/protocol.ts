@@ -1,0 +1,169 @@
+/**
+ * The `x18n/*` custom protocol. Shapes are versioned with the JSON contract (`contractVersion` in `@x18n/core`).
+ * Positions and ranges use LSP conventions (zero-based lines, UTF-16 characters).
+ */
+
+export interface Position {
+  readonly line: number
+  readonly character: number
+}
+
+export interface Range {
+  readonly start: Position
+  readonly end: Position
+}
+
+export interface Location {
+  readonly uri: string
+  readonly range: Range
+}
+
+export interface DocumentParams {
+  readonly uri: string
+}
+
+export interface PositionParams extends DocumentParams {
+  readonly position: Position
+}
+
+export interface ProjectInfo {
+  readonly name: string
+  readonly root: string
+  readonly sourceLocale: string
+  readonly locales: readonly { readonly code: string, readonly displayName: string | undefined, readonly flag: string | undefined }[]
+  readonly displayLocale: string
+  readonly keys: number
+}
+
+export interface KeyAtResult {
+  readonly project: string
+  readonly key: string
+  readonly type: 'key' | 'subtree'
+  readonly range: Range
+}
+
+export interface TreeParams {
+  readonly project?: string | undefined
+  /** Parent key; omitted for the roots. */
+  readonly parent?: string | undefined
+}
+
+export interface TreeNode {
+  readonly key: string
+  readonly label: string
+  readonly leaf: boolean
+  readonly translated: number
+  readonly total: number
+  /** Display-locale value for leaves. */
+  readonly value: string | undefined
+}
+
+export interface LocaleProgress {
+  readonly locale: string
+  readonly translated: number
+  readonly total: number
+  readonly missing: readonly string[]
+  readonly empty: readonly string[]
+}
+
+export interface ProgressResult {
+  readonly projects: readonly { readonly name: string, readonly locales: readonly LocaleProgress[] }[]
+}
+
+export interface FileKey {
+  readonly key: string
+  readonly range: Range
+  readonly value: string | undefined
+  readonly missing: boolean
+  readonly dynamic: boolean
+}
+
+export interface FileKeysResult {
+  readonly keys: readonly FileKey[]
+  readonly hardStrings: readonly { readonly text: string, readonly range: Range }[]
+}
+
+export interface UsageReportResult {
+  readonly unused: readonly { readonly project: string, readonly key: string, readonly location: Location | undefined }[]
+  readonly missing: readonly { readonly project: string, readonly key: string, readonly locations: readonly Location[] }[]
+}
+
+export interface Decoration {
+  readonly range: Range
+  readonly key: string
+  readonly value: string | undefined
+  readonly state: 'ok' | 'missing' | 'dynamic'
+}
+
+export interface DecorationsResult {
+  readonly locale: string
+  readonly decorations: readonly Decoration[]
+}
+
+export interface SetDisplayLocaleParams {
+  readonly locale: string | undefined
+}
+
+export interface OpenUiParams {
+  readonly project?: string | undefined
+}
+
+export interface OpenUiResult {
+  readonly url: string
+  readonly token: string
+}
+
+export interface TranslatePromptParams {
+  readonly project?: string | undefined
+  readonly locale: string
+  readonly keys?: readonly string[] | undefined
+}
+
+export interface ChangedParams {
+  readonly project: string
+  readonly revision: number
+  readonly keys: readonly string[]
+}
+
+export interface Methods {
+  readonly projects: 'x18n/projects'
+  readonly keyAt: 'x18n/keyAt'
+  readonly tree: 'x18n/tree'
+  readonly progress: 'x18n/progress'
+  readonly fileKeys: 'x18n/fileKeys'
+  readonly usageReport: 'x18n/usageReport'
+  readonly decorations: 'x18n/decorations'
+  readonly setDisplayLocale: 'x18n/setDisplayLocale'
+  readonly openUi: 'x18n/openUi'
+  readonly translatePrompt: 'x18n/translatePrompt'
+  readonly changed: 'x18n/changed'
+}
+
+export const methods: Methods = {
+  projects: 'x18n/projects',
+  keyAt: 'x18n/keyAt',
+  tree: 'x18n/tree',
+  progress: 'x18n/progress',
+  fileKeys: 'x18n/fileKeys',
+  usageReport: 'x18n/usageReport',
+  decorations: 'x18n/decorations',
+  setDisplayLocale: 'x18n/setDisplayLocale',
+  openUi: 'x18n/openUi',
+  translatePrompt: 'x18n/translatePrompt',
+  changed: 'x18n/changed',
+}
+
+/** Commands for `workspace/executeCommand`. */
+export interface Commands {
+  readonly set: 'x18n.set'
+  readonly delete: 'x18n.delete'
+  readonly renamePrefix: 'x18n.renamePrefix'
+  readonly extract: 'x18n.extract'
+}
+
+export const commands: Commands = {
+  set: 'x18n.set',
+  delete: 'x18n.delete',
+  renamePrefix: 'x18n.renamePrefix',
+  extract: 'x18n.extract',
+}

@@ -17,6 +17,7 @@ export interface LoadOptions {
   readonly cache?: boolean | undefined;
   readonly builtins?: Builtins | undefined;
   readonly logger?: NodeHost["logger"];
+  readonly wrapHost?: ((_: NodeHost) => Host) | undefined;
   readonly scanFiles?: ((_: readonly SourceFile[]) => Promise<readonly ScanResult[]>) | undefined;
 }
 export interface NodeHost extends Host {
