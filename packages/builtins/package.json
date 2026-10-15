@@ -28,12 +28,14 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "THIRD-PARTY-NOTICES.md",
     "dist"
   ],
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepack": "cp ../../THIRD-PARTY-NOTICES.md ."
   },
   "dependencies": {
     "@vue/compiler-sfc": "catalog:deps",

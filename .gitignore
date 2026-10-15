@@ -23,3 +23,4 @@ packages/core/schema
 test-results
 playwright-report
 bench
+packages/builtins/THIRD-PARTY-NOTICES.md
