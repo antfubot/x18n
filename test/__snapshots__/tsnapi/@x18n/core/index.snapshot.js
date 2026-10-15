@@ -25,6 +25,7 @@ export function defineConfig(_) {}
 export function definePlugin(_) {}
 export function definePreset(_) {}
 export function diffText(_, _) {}
+export function envelope(_, _, _, _) {}
 export function extensionOf(_) {}
 export function globToRegExp(_, _) {}
 export function hashText(_) {}
@@ -45,12 +46,15 @@ export function replaceKeyPrefix(_, _, _) {}
 export async function resolveConfig(_) {}
 export function sortTree(_, _) {}
 export function splitKey(_, _) {}
+export function toWireDiagnostic(_, _, _) {}
+export function toWireRange(_, _, _) {}
 export function validate(_, _) {}
 export function* walkLeaves(_, _) {}
 // #endregion
 
 // #region Variables
 export var ConfigSchema /* const */
+export var contractVersion /* const */
 export var errorCodes /* const */
 export var PluginFileSchema /* const */
 // #endregion

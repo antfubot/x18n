@@ -9,6 +9,7 @@ export default defineConfig({
     'manifests': 'src/manifests/index.ts',
     'placeholders': 'src/placeholders/index.ts',
     'presets': 'src/presets/index.ts',
+    'reporters': 'src/reporters/index.ts',
     'scanners': 'src/scanners/index.ts',
     'yaml-plugin': 'src/yaml-plugin/index.ts',
   },

@@ -21,6 +21,7 @@
     "./manifests": "./dist/manifests.mjs",
     "./placeholders": "./dist/placeholders.mjs",
     "./presets": "./dist/presets.mjs",
+    "./reporters": "./dist/reporters.mjs",
     "./scanners": "./dist/scanners.mjs",
     "./yaml-plugin": "./dist/yaml-plugin.mjs",
     "./package.json": "./package.json"

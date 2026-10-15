@@ -1,3 +1,5 @@
+export { contractVersion, envelope, toWireDiagnostic, toWireRange } from './contracts'
+export type { Envelope, WireDiagnostic, WireRange } from './contracts'
 export { defineConfig, definePlugin, definePreset } from './define'
 export { errorCodes, isX18nError, X18nError } from './errors'
 export type { ErrorCode, ErrorInfo } from './errors'

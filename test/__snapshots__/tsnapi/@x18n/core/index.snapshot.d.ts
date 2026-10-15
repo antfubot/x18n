@@ -124,6 +124,13 @@ export interface DiagnosticInput {
 export interface Disposable {
   readonly dispose: () => void;
 }
+export interface Envelope<T> {
+  readonly x18n: number;
+  readonly command: string;
+  readonly data: T;
+  readonly diagnostics: readonly WireDiagnostic[];
+  readonly errors: readonly ErrorInfo[];
+}
 export interface ErrorInfo {
   readonly code: ErrorCode;
   readonly message: string;
@@ -535,12 +542,12 @@ export interface Reporter {
   readonly report: (_: readonly ReportInput[], _: ReporterContext) => string | Promise<string>;
 }
 export interface ReporterContext {
-  readonly text: (_: string) => string | undefined;
-  readonly displayPath: (_: string) => string;
+  readonly displayPath: (_: string, _: string) => string;
   readonly color: boolean;
 }
 export interface ReportInput {
   readonly project: string;
+  readonly text: (_: string) => string | undefined;
   readonly diagnostics: readonly Diagnostic[];
   readonly coverage: readonly LocaleCoverage[];
   readonly summary: ReportSummary;
@@ -763,6 +770,25 @@ export interface UserConfig extends Omit<SerializableConfig, "presets" | "plugin
   } | undefined;
   readonly pluginConfigs?: Partial<PluginConfigs> | undefined;
 }
+export interface WireDiagnostic {
+  readonly project: string;
+  readonly code: string;
+  readonly severity: Severity;
+  readonly message: string;
+  readonly key: KeyString | undefined;
+  readonly locale: LocaleCode | undefined;
+  readonly file: string | undefined;
+  readonly range: WireRange | undefined;
+  readonly fixes: readonly Fix[];
+}
+export interface WireRange {
+  readonly line: number;
+  readonly column: number;
+  readonly endLine: number;
+  readonly endColumn: number;
+  readonly start: number;
+  readonly end: number;
+}
 export interface WriteOptions {
   readonly sort?: false | "binary" | "locale" | undefined;
   readonly indent?: number | "tab" | undefined;
@@ -873,6 +899,7 @@ export declare function definePlugin<const T extends Plugin>(_: T): T;
 export declare function definePlugin<O, const T extends Plugin>(_: (_: O) => T): (_: O) => T;
 export declare function definePreset<const T extends Preset>(_: T): T;
 export declare function diffText(_: string, _: string): TextEdit[];
+export declare function envelope<T>(_: string, _: T, _?: readonly WireDiagnostic[], _?: readonly ErrorInfo[]): Envelope<T>;
 export declare function extensionOf(_: string): string;
 export declare function globToRegExp(_: string, _?: string): RegExp;
 export declare function hashText(_: string): string;
@@ -893,6 +920,8 @@ export declare function replaceKeyPrefix(_: KeyString, _: KeyString, _: KeyStrin
 export declare function resolveConfig(_: ResolveConfigOptions): Promise<Setup>;
 export declare function sortTree(_: MessageTree, _: (_: string, _: string) => number): MessageTree;
 export declare function splitKey(_: KeyString, _?: boolean): KeyId;
+export declare function toWireDiagnostic(_: string, _: Diagnostic, _: (_: string) => string | undefined): WireDiagnostic;
+export declare function toWireRange(_: string | undefined, _: number, _: number): WireRange;
 export declare function validate<T>(_: v.GenericSchema<T>, _: unknown): {
   readonly success: true;
   readonly output: T;
@@ -905,6 +934,7 @@ export declare function walkLeaves(_: MessageTree, _?: readonly string[]): Gener
 
 // #region Variables
 export declare const ConfigSchema: v.GenericSchema<SerializableConfig>;
+export declare const contractVersion: number;
 export declare const errorCodes: { readonly [C in ErrorCode]: {
   readonly message: string;
   readonly hint: string;

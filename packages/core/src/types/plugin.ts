@@ -224,16 +224,16 @@ export interface ReportSummary {
 
 export interface ReportInput {
   readonly project: string
+  /** File text, for code frames and line numbers. */
+  readonly text: (path: string) => string | undefined
   readonly diagnostics: readonly Diagnostic[]
   readonly coverage: readonly LocaleCoverage[]
   readonly summary: ReportSummary
 }
 
 export interface ReporterContext {
-  /** File text, for code frames. */
-  readonly text: (path: string) => string | undefined
   /** Turns a project path into the path to print (relative to the cwd). */
-  readonly displayPath: (path: string) => string
+  readonly displayPath: (path: string, project: string) => string
   readonly color: boolean
 }
 
