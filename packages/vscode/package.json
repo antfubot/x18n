@@ -59,9 +59,8 @@
     "dev": "tsdown --watch --sourcemap",
     "codegen": "vscode-ext-gen --scope x18n --output src/generated/meta.ts",
     "typecheck": "tsc --noEmit",
-    "vscode:prepublish": "pnpm run build",
-    "ext:package": "vsce package --no-dependencies",
-    "ext:publish": "vsce publish --no-dependencies && ovsx publish --no-dependencies"
+    "ext:package": "pnpm run build && tsx scripts/stage.ts && cd .vsce && vsce package --no-dependencies -o ../x18n.vsix",
+    "ext:publish": "pnpm run ext:package && vsce publish --packagePath x18n.vsix && ovsx publish x18n.vsix"
   },
   "devDependencies": {
     "@types/vscode": "catalog:types",
@@ -69,6 +68,7 @@
     "@x18n/lsp": "workspace:*",
     "ovsx": "catalog:vscode",
     "reactive-vscode": "catalog:vscode",
+    "tsx": "catalog:cli",
     "vscode-ext-gen": "catalog:vscode",
     "vscode-languageclient": "catalog:vscode",
     "vscode-languageserver": "catalog:deps"

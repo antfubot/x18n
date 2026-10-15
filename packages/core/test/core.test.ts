@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { createMemoryHost, definePlugin, isMessageTree } from '../src'
+import { createMemoryHost, definePlugin, definePreset, isMessageTree } from '../src'
 
 describe('isMessageTree', () => {
   it('accepts nested objects of leaves', () => {
@@ -28,5 +28,13 @@ describe('definePlugin', () => {
   it('keeps literal types', () => {
     const plugin = definePlugin({ name: 'acme' })
     expectTypeOf(plugin.name).toEqualTypeOf<'acme'>()
+  })
+})
+
+describe('definePreset', () => {
+  it('keeps literal names of nested plugins', () => {
+    const preset = definePreset({ name: 'acme', plugins: [definePlugin({ name: 'acme-format' })] })
+    expectTypeOf(preset.name).toEqualTypeOf<'acme'>()
+    expectTypeOf(preset.plugins[0].name).toEqualTypeOf<'acme-format'>()
   })
 })

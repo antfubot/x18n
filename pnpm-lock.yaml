@@ -355,6 +355,9 @@ importers:
       vitest:
         specifier: catalog:testing
         version: 5.0.4(@opentelemetry/api@1.9.1)(@types/node@26.6.5)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      x18n:
+        specifier: workspace:*
+        version: link:packages/cli
 
   docs:
     dependencies:
@@ -437,6 +440,9 @@ importers:
       reactive-vscode:
         specifier: catalog:vscode
         version: 1.0.2(@types/vscode@1.100.0)
+      tsx:
+        specifier: catalog:cli
+        version: 4.23.15
       vscode-ext-gen:
         specifier: catalog:vscode
         version: 1.6.0

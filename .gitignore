@@ -18,3 +18,4 @@ temp
 .data
 *.vsix
 packages/vscode/src/generated
+packages/vscode/.vsce

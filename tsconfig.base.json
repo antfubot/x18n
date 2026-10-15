@@ -13,6 +13,9 @@
       ],
       "@x18n/lsp": [
         "./packages/lsp/src/index.ts"
+      ],
+      "x18n": [
+        "./packages/cli/src/index.ts"
       ]
     },
     "resolveJsonModule": true,

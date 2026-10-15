@@ -4,6 +4,8 @@
 // #region Other
 export { defineConfig }
 export { definePlugin }
+export { definePreset }
 export { Plugin }
+export { Preset }
 export { UserConfig }
 // #endregion

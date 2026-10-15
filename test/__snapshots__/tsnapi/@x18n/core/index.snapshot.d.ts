@@ -22,19 +22,47 @@ export interface Plugin {
   readonly name: string;
   readonly formats?: readonly Format[];
 }
+export interface Preset {
+  readonly name: string;
+  readonly plugins: readonly (Plugin | Preset)[];
+}
+export interface ResourceSpec {
+  readonly pattern: string;
+  readonly format?: string;
+  readonly namespace?: string;
+  readonly execute?: boolean;
+}
+export interface UsageOptions {
+  readonly include?: readonly string[];
+  readonly exclude?: readonly string[];
+  readonly keysInUse?: readonly string[];
+  readonly ignoreCallees?: readonly string[];
+}
 export interface UserConfig {
   readonly sourceLocale?: string;
+  readonly locales?: readonly string[];
+  readonly ignoreLocales?: readonly string[];
+  readonly presets?: "auto" | readonly Preset[];
   readonly plugins?: readonly Plugin[];
+  readonly resources?: readonly ResourceSpec[];
+  readonly keyStyle?: "auto" | "nested" | "flat";
+  readonly usage?: UsageOptions;
+  readonly checks?: Readonly<Record<string, Severity | "off">>;
+  readonly strict?: boolean;
+  readonly ignoreKeys?: readonly string[];
+  readonly projects?: readonly string[];
 }
 // #endregion
 
 // #region Types
 export type MessageLeaf = string | number | boolean | null;
+export type Severity = "error" | "warning" | "info" | "hint";
 // #endregion
 
 // #region Functions
 export declare function createMemoryHost(_?: Readonly<Record<string, string>>): MemoryHost;
 export declare function defineConfig(_: UserConfig): UserConfig;
 export declare function definePlugin<const T extends Plugin>(_: T): T;
+export declare function definePreset<const T extends Preset>(_: T): T;
 export declare function isMessageTree(_: unknown): value is MessageTree;
 // #endregion

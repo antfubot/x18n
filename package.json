@@ -66,7 +66,8 @@
     "turbo": "catalog:build",
     "typescript": "catalog:cli",
     "vite": "catalog:cli",
-    "vitest": "catalog:testing"
+    "vitest": "catalog:testing",
+    "x18n": "workspace:*"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm i --frozen-lockfile --ignore-scripts --offline && pnpm run ci && pnpx nano-staged"

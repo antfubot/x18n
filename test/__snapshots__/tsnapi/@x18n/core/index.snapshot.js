@@ -5,5 +5,6 @@
 export function createMemoryHost(_) {}
 export function defineConfig(_) {}
 export function definePlugin(_) {}
+export function definePreset(_) {}
 export function isMessageTree(_) {}
 // #endregion
