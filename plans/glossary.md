@@ -1,0 +1,33 @@
+# Glossary
+
+Use these names in code, docs and UI. Avoid the "not" column.
+
+| Term | Meaning | Not |
+| --- | --- | --- |
+| **Project** | One i18n setup with one root, one config and one set of locales. A monorepo can have many. | workspace (that is the editor's word), app |
+| **Host** | The object that gives a project file access, globbing, watching and caching. | adapter, driver, fs |
+| **Locale** | A normalized BCP 47 tag. | language, lang (except in i18n-ally migration text) |
+| **Source locale** | The locale that is the source of truth for checks and prompts. | base, default language |
+| **Display locale** | The locale shown in annotations and hovers. Per user. | |
+| **Resource** | A file, or a block inside a file, that holds messages for one locale and one namespace. | locale file (fine in prose for users), dictionary |
+| **Namespace** | A named group of keys, usually from a file name. | scope (that is a code region) |
+| **Key** | The canonical id of a message: namespace plus path. String form `ns:a.b.c`. | keypath, id |
+| **Message** | The value of one key in one locale. | translation (fine for non-source locales in prose), string |
+| **Usage** | One occurrence of a key in source code. | reference, occurrence |
+| **Scope** | A region of source code with a default namespace or key prefix. | |
+| **Hard string** | Text in source code that should probably be a message. | |
+| **Plugin** | An object that contributes capabilities through the plugin API. | framework, extension |
+| **Preset** | A detected or listed group of plugins for one library. | framework |
+| **Capability** | One kind of contribution: manifest reader, locale finder, format, scanner, extractor, check, reporter, placeholder syntax, review store. | |
+| **Format** | Reads and writes one file format. | parser (only for the read half) |
+| **Locale finder** | Finds resources. | loader |
+| **Scanner** | Finds usages in source files. | detector |
+| **Extractor** | Finds hard strings and builds replacements. | |
+| **Check** | Produces diagnostics from project state. | rule (fine inside extraction scoring), lint |
+| **Reporter** | Turns diagnostics and analysis into text output. | formatter |
+| **Diagnostic** | One reported issue with a code, severity and optional fixes. | problem, error (unless severity is error) |
+| **Plan** | The side-effect-free result of planning edits: file changes plus decisions. | patch, diff |
+| **Decision** | A question in a plan that a surface must answer before apply. | prompt (that word is for LLM prompts) |
+| **Surface** | A user-facing layer on the core: CLI, LSP, extension, UI, MCP. | client, frontend |
+| **Translate prompt** | The text that describes translation work for an agent or LLM. | |
+| **Review thread** | Comments and votes on one message. | |
