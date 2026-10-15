@@ -1,15 +1,158 @@
 import { execFile } from 'node:child_process'
+import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { promisify } from 'node:util'
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { version } from '../package.json' with { type: 'json' }
 
 const bin = fileURLToPath(new URL('../bin.mjs', import.meta.url))
-const run = promisify(execFile)
+const fixtures = fileURLToPath(new URL('../../../test/fixtures/', import.meta.url))
+let work: string
+
+interface Result { stdout: string, stderr: string, code: number }
+
+function x18n(cwd: string, args: string[], input?: string): Promise<Result> {
+  return new Promise((resolve) => {
+    const child = execFile(process.execPath, [bin, ...args, '--no-cache'], { cwd, env: { ...process.env, NO_COLOR: '1' } }, (error, stdout, stderr) => {
+      resolve({ stdout, stderr, code: error ? Number(error.code ?? 1) : 0 })
+    })
+    if (input !== undefined) {
+      child.stdin!.write(input)
+      child.stdin!.end()
+    }
+  })
+}
+
+async function fixture(name: string): Promise<string> {
+  const dir = join(work, `${name}-${Math.random().toString(36).slice(2)}`)
+  await cp(join(fixtures, name), dir, { recursive: true })
+  await writeFile(join(dir, '.gitignore'), '')
+  return dir
+}
+
+beforeAll(async () => {
+  work = await mkdtemp(join(tmpdir(), 'x18n-cli-'))
+})
+
+afterAll(async () => {
+  await rm(work, { recursive: true, force: true })
+})
+
+function json(result: Result): any {
+  return JSON.parse(result.stdout)
+}
 
 describe('x18n binary', () => {
   it('prints its version', async () => {
-    const { stdout } = await run(process.execPath, [bin, '--version'])
+    const { stdout } = await x18n(work, ['--version'])
     expect(stdout).toContain(`x18n/${version}`)
+  })
+
+  it('check prints tsc-style diagnostics and fails on errors', async () => {
+    const dir = await fixture('vue-i18n')
+    const result = await x18n(dir, ['check'])
+    expect(result.code).toBe(1)
+    expect(result.stdout).toContain('src/locales/de.json:4:6 - error placeholder-mismatch: "app.greeting" in de has different placeholders than en: missing name.')
+    expect(result.stdout).toMatch(/Found \d+ errors? and \d+ warnings? in \d+ files?\./)
+  })
+
+  it('check --json follows the contract', async () => {
+    const dir = await fixture('i18next')
+    const result = await x18n(dir, ['check', '--json'])
+    const data = json(result)
+    expect(data.x18n).toBe(1)
+    expect(data.command).toBe('check')
+    expect(data.diagnostics.find((d: any) => d.code === 'placeholder-mismatch')).toMatchObject({
+      key: 'auth:login.submit',
+      locale: 'de',
+      file: 'public/locales/de/auth.json',
+      range: { line: 4, column: 6 },
+    })
+  })
+
+  it('check narrows with --only and fails on --max-warnings', async () => {
+    const dir = await fixture('vue-i18n')
+    expect((await x18n(dir, ['check', '--only', 'empty-translation'])).code).toBe(0)
+    expect((await x18n(dir, ['check', '--only', 'empty-translation', '--max-warnings', '0'])).code).toBe(1)
+    const github = await x18n(dir, ['check', '--only', 'empty-translation', '--reporter', 'github'])
+    expect(github.stdout).toContain('::warning file=src/locales/de.json,line=8,col=6')
+  })
+
+  it('status, keys, get and locales return JSON', async () => {
+    const dir = await fixture('i18next')
+    const status = json(await x18n(dir, ['status', '--json'])).data.projects[0]
+    expect(status).toMatchObject({ sourceLocale: 'en', resources: 4, keys: 6 })
+    const keys = json(await x18n(dir, ['keys', '--json', '--limit', '2'])).data.projects[0]
+    expect(keys).toMatchObject({ total: 6, nextCursor: '2', keys: [{ key: 'auth:login.submit' }, { key: 'auth:login.title' }] })
+    const get = json(await x18n(dir, ['get', 'common:save', '--json'])).data.projects[0]
+    expect(get.messages.map((m: any) => [m.locale, m.value])).toEqual([['en', 'Save'], ['de', 'Speichern']])
+    const locales = json(await x18n(dir, ['locales', '--json'])).data.projects[0]
+    expect(locales.locales.map((l: any) => l.code)).toEqual(['en', 'de'])
+  })
+
+  it('doctor explains detected presets', async () => {
+    const dir = await fixture('i18next')
+    const projects = json(await x18n(dir, ['doctor', '--json'])).data.projects
+    expect(projects[0].presets).toContainEqual({ name: 'react-i18next', reason: 'detected' })
+  })
+
+  it('set, rename and delete write files; --dry-run does not', async () => {
+    const dir = await fixture('vue-i18n')
+    const en = join(dir, 'src/locales/en.json')
+    const before = await readFile(en, 'utf8')
+    const dry = await x18n(dir, ['set', 'nav.contact', '--value', 'Contact', '--dry-run'])
+    expect(dry.stdout).toContain('+     "contact": "Contact"')
+    expect(await readFile(en, 'utf8')).toBe(before)
+
+    expect((await x18n(dir, ['set', 'nav.contact', '--value', 'Contact'])).code).toBe(0)
+    expect(JSON.parse(await readFile(en, 'utf8')).nav.contact).toBe('Contact')
+
+    expect((await x18n(dir, ['rename', 'nav.contact', 'nav.reach'])).code).toBe(0)
+    expect(JSON.parse(await readFile(en, 'utf8')).nav).toEqual({ home: 'Home', about: 'About', reach: 'Contact' })
+
+    expect((await x18n(dir, ['delete', 'nav.reach'])).code).toBe(0)
+    expect(await readFile(en, 'utf8')).toBe(before)
+  })
+
+  it('rename refuses an existing target with exit code 1', async () => {
+    const dir = await fixture('vue-i18n')
+    const result = await x18n(dir, ['rename', 'nav.home', 'nav.about', '--json'])
+    expect(result.code).toBe(1)
+    expect(json(result).errors[0].code).toBe('X18N4002')
+  })
+
+  it('apply validates placeholders before writing', async () => {
+    const dir = await fixture('vue-i18n')
+    const bad = await x18n(dir, ['apply', '-', '--json'], JSON.stringify({ de: { 'app.greeting': 'Hallo' } }))
+    expect(bad.code).toBe(1)
+    expect(json(bad).data.rejected).toEqual([{ key: 'app.greeting', locale: 'de', missing: ['name'], extra: [] }])
+    const good = await x18n(dir, ['apply', '-'], JSON.stringify({ de: { 'app.greeting': 'Hallo {name}', 'pages.about.title': 'Über uns' } }))
+    expect(good.code).toBe(0)
+    const de = JSON.parse(await readFile(join(dir, 'src/locales/de.json'), 'utf8'))
+    expect(de.pages.about.title).toBe('Über uns')
+  })
+
+  it('fill adds missing keys', async () => {
+    const dir = await fixture('vue-i18n')
+    await x18n(dir, ['fill', '--copy-source'])
+    const de = JSON.parse(await readFile(join(dir, 'src/locales/de.json'), 'utf8'))
+    expect(de.pages.about.title).toBe('About us')
+  })
+
+  it('init writes a config, schema prints JSON Schema', async () => {
+    const dir = await fixture('vue-i18n')
+    const result = await x18n(dir, ['init'])
+    expect(result.code).toBe(0)
+    expect(await readFile(join(dir, 'x18n.config.ts'), 'utf8')).toContain('pattern: \'src/locales/{locale}.{ext}\'')
+    expect(JSON.parse((await x18n(dir, ['schema', 'plugin'])).stdout).title).toBe('x18n YAML plugin')
+  })
+
+  it('errors on config problems with exit code 2', async () => {
+    const dir = await fixture('vue-i18n')
+    await writeFile(join(dir, 'x18n.config.json'), '{ "sourceLocal": "en" }')
+    const result = await x18n(dir, ['status'])
+    expect(result.code).toBe(2)
+    expect(result.stderr).toContain('error X18N0001')
   })
 })

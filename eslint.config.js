@@ -13,6 +13,8 @@ export default antfu(
       '**/.data',
       'packages/vscode/src/generated',
       'packages/core/schema',
+      // Sample user projects for tests.
+      'test/fixtures',
     ],
   },
   {

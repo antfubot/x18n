@@ -1,7 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
   // tsnapi writes these API snapshots; they are compared, never imported.
-  "ignore": ["test/__snapshots__/tsnapi/**"],
+  "ignore": ["test/__snapshots__/tsnapi/**", "test/fixtures/**"],
   "ignoreDependencies": ["@antfu/utils", "taze", "@antfu/skills"],
   "workspaces": {
     ".": {

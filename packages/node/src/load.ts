@@ -12,6 +12,8 @@ export interface LoadOptions {
   readonly cwd: string
   /** Explicit config file. */
   readonly configFile?: string | undefined
+  /** Look for a config in parent directories too. Default true. */
+  readonly upward?: boolean | undefined
   /** Only this project of a monorepo. */
   readonly project?: string | undefined
   /** Disable the persistent cache. */
@@ -65,7 +67,9 @@ async function projectSpecs(rootConfigFile: string | undefined, cwd: string): Pr
 
 /** Finds the config, resolves every project and waits until each is indexed. */
 export async function loadWorkspace(options: LoadOptions): Promise<Workspace> {
-  const configFile = options.configFile ? resolve(options.cwd, options.configFile) : findConfigUpward(options.cwd)
+  const configFile = options.configFile
+    ? resolve(options.cwd, options.configFile)
+    : options.upward === false ? findConfigFile(resolve(options.cwd)) : findConfigUpward(options.cwd)
   const { root, specs } = await projectSpecs(configFile, options.cwd)
   const builtins = options.builtins ?? createBuiltins()
   const gitRoot = findGitRoot(root)

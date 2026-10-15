@@ -1,0 +1,6 @@
+{
+  "save": "Speichern",
+  "cancel": "Abbrechen",
+  "item_one": "{{count}} Element",
+  "item_other": "{{count}} Elemente"
+}

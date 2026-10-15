@@ -1,0 +1,17 @@
+{
+  "app": {
+    "title": "Meine App",
+    "greeting": "Hallo"
+  },
+  "nav": {
+    "home": "Start",
+    "about": ""
+  },
+  "pages": {
+    "home": {
+      "title": "Willkommen"
+    }
+  },
+  "unused": "Niemand",
+  "linked": "@:app.title!"
+}

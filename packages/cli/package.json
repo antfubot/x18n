@@ -22,6 +22,7 @@
   "sideEffects": false,
   "exports": {
     ".": "./dist/index.mjs",
+    "./presets": "./dist/presets.mjs",
     "./package.json": "./package.json"
   },
   "types": "./dist/index.d.mts",
@@ -41,7 +42,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@x18n/builtins": "workspace:*",
     "@x18n/core": "workspace:*",
-    "cac": "catalog:deps"
+    "@x18n/node": "workspace:*",
+    "cac": "catalog:deps",
+    "yaml": "catalog:deps"
   }
 }

@@ -412,12 +412,21 @@ importers:
 
   packages/cli:
     dependencies:
+      '@x18n/builtins':
+        specifier: workspace:*
+        version: link:../builtins
       '@x18n/core':
         specifier: workspace:*
         version: link:../core
+      '@x18n/node':
+        specifier: workspace:*
+        version: link:../node
       cac:
         specifier: catalog:deps
         version: 7.1.0
+      yaml:
+        specifier: catalog:deps
+        version: 2.9.1
 
   packages/core:
     dependencies:

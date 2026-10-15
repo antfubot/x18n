@@ -12,6 +12,7 @@ export interface LoadedProject {
 export interface LoadOptions {
   readonly cwd: string;
   readonly configFile?: string | undefined;
+  readonly upward?: boolean | undefined;
   readonly project?: string | undefined;
   readonly cache?: boolean | undefined;
   readonly builtins?: Builtins | undefined;
