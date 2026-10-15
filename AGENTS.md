@@ -33,7 +33,9 @@ Full list and reasons: [`plans/01-architecture.md`](./plans/01-architecture.md).
 | `packages/lsp` | `@x18n/lsp` |
 | `packages/ui` | `@x18n/ui` (Nuxt SPA in `app/`, devframe node side in `src/node/`) |
 | `packages/vscode` | `x18n-vscode` (private, published to the Marketplace) |
-| `docs` | docs site on the comark-docs layer |
+| `docs` | docs site on the comark-docs layer (`x18n.antfu.dev`) |
+
+The root `x18n.config.ts` points x18n at the UI's own messages (`packages/ui/app/locales`), so the repo checks itself.
 
 ## Commands
 

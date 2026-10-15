@@ -15,7 +15,7 @@ i18n-ally is MIT licensed (Copyright Lokalise Inc., Anthony Fu, think2011). x18n
 | --- | --- | --- |
 | `utils/PathMatcher.ts` | `@x18n/builtins` `pattern` finder | Matcher tokens and `ReplaceLocale`. Add tests for every token. |
 | `core/loaders/LocaleLoader.ts` `guessDirStructure`, `findLocaleDirs` | `pattern` finder auto-guess | Only the heuristics; the loader itself is replaced by the core engine. |
-| `tagSystems/*` | `@x18n/core` locale tags | Add `bcp-47` as a declared dependency (missing in i18n-ally). |
+| `tagSystems/*` | `@x18n/core` lenient `localeInfo` parse | Display data only (language, region, flag); codes are never rewritten. Declare `bcp-47` as a dependency (missing in i18n-ally). |
 | `utils/flat.ts`, `utils/utils.ts` `applyPendingToObject` | core key style | |
 | `frameworks/*.ts` | `@x18n/builtins/presets` | Regexes become `regex` scanner config for parity; call specs for the `js` scanner are new. Refactor templates, derived key rules, `rewriteKeys`, scope rules, data transforms (Rails, chrome-ext). Fix `perferredKeystyle` typos while porting. Register `i18n-js` (never registered upstream). |
 | `frameworks/custom.ts` | YAML plugin format + migration | |
@@ -34,7 +34,7 @@ i18n-ally is MIT licensed (Copyright Lokalise Inc., Anthony Fu, think2011). x18n
 
 - `core/Global.ts`, `core/Config.ts`, `core/CurrentFile.ts`: singletons tied to VS Code. Replaced by `Project` and config resolution.
 - `translators/*`, `core/Translator.ts`: replaced by translate prompts.
-- `parsers/ecmascript.ts` (ts-node execution): replaced by static reading.
+- `parsers/ecmascript.ts` (ts-node execution): replaced by static reading, plus the opt-in `execute: true` that reuses the config loader.
 - `core/Telemetry.ts`, `update-notification.ts`.
 - `webview/` (Vue 2, Parcel): replaced by `@x18n/ui`.
 - `views/*` tree item classes: replaced by LSP requests and thin VS Code views.

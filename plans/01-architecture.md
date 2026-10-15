@@ -71,9 +71,9 @@ host (fs/glob/watch)                                   surfaces
 | CLI one-shot (`x18n check`) | One Node process: node host, project, exit. |
 | CLI UI (`x18n ui`) | One Node process: project + devframe dev server, browser connects over WebSocket. |
 | Static report (`x18n build`) | Build step dumps RPC results. The deployed site has no server. |
-| In-browser workspace | No server. The SPA runs core + builtins with a browser host over the File System Access API or in-memory demo files. |
-| Editor | Editor spawns `x18n-lsp`. The server holds the project and an overlay host for unsaved buffers. |
-| VS Code | Extension starts the bundled LSP. On "Open x18n", the LSP starts the devframe server on loopback; a webview iframes it through `asExternalUri`. |
+| In-browser workspace (1.x) | No server. The SPA runs core + builtins with a browser host over the File System Access API or in-memory demo files. |
+| Other LSP editors (1.x) | Editor spawns `x18n-lsp`. The server holds the project and an overlay host for unsaved buffers. |
+| VS Code | Extension starts the bundled LSP. On "Open x18n", the LSP starts the devframe server on loopback with a pre-issued auth token; a webview iframes it through `asExternalUri`. The extension client also handles coexistence with TypeScript's providers ([08-vscode.md](./08-vscode.md)). |
 
 ## Repository tooling
 

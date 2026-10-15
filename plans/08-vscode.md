@@ -1,45 +1,91 @@
 # 08 - VS Code extension
 
-Package `packages/vscode`, published as `antfu.x18n-vscode` (publisher and id to confirm) to the Marketplace and Open VSX. Built with `reactive-vscode`, types and meta from `vscode-ext-gen`, bundled by tsdown to CJS with `vscode` external, `--no-dependencies` packaging. Engine `^1.100.0`.
+Package `packages/vscode`, published as **`antfu.x18n`** (display name "x18n") to the Marketplace and Open VSX. Built with `reactive-vscode`, types and meta from `vscode-ext-gen`, bundled by tsdown to CJS with `vscode` external, `--no-dependencies` packaging. Engine `^1.100.0`.
 
 The extension holds no i18n logic. Everything comes from the LSP through standard and `x18n/*` requests.
 
+## Package name and id
+
+Turborepo refuses two workspace packages with the same name, and the CLI owns `x18n`. So the workspace package is `x18n-vscode`. The `ext:package` and `ext:publish` scripts write a staged copy to `.vsce/`, with `name: "x18n"` and without dev-only fields, then run `vsce` and `ovsx` on the `.vsix` built from it. Code never relies on the generated `extensionId` constant, which would read `antfu.x18n-vscode`.
+
 ## Activation
 
-- `workspaceContains:**/x18n.config.*`, `workspaceContains:**/package.json` (the server then decides, and stays idle when nothing is detected), and `onCommand:x18n.*`.
+- `workspaceContains:**/x18n.config.*` and `workspaceContains:**/package.json` (the server then decides, and stays idle when nothing is detected), plus `onCommand:x18n.*`.
 - Starts the bundled `x18n-lsp` with `vscode-languageclient` over node IPC. The document selector is broad (`file` scheme, all languages); the server ignores files it has no scanner or format for.
+
+## Coexisting with TypeScript
+
+Research (October 2026) found:
+- VS Code merges definition and references from all providers.
+- For rename, the first provider whose `prepareRename` accepts wins. Rejections fall through to the next one.
+- tsserver accepts rename on string literals typed as a literal union, and then changes only those literals.
+- TS 7 (the Go port) does not load tsserver plugins.
+
+So there is no tsserver plugin. Instead:
+
+1. **TS 6 tsserver (VS Code's built-in default).** Our rename provider, registered through the language client with `prepareRename`, sorts before the built-in TypeScript provider at equal score. A VS Code e2e test proves that rename on a typed key literal reaches x18n.
+2. **TS 7 (`TypeScriptTeam.native-preview` active).** Through its `registerLspMiddleware` for `textDocument/prepareRename` and `textDocument/rename`, the extension asks the x18n LSP per request (`x18n/keyAt`). On a key, it nulls out TS's result so ours applies. The transformer is async, so no sync bridge is needed.
+3. **References.** Client middleware drops locations that the TypeScript provider already reports, so the peek view shows no duplicates.
+4. Our `prepareRename` returns `null` outside keys, so TS rename keeps working everywhere else.
 
 ## Features
 
 | Feature | Built from |
 | --- | --- |
-| Inline annotations and in-place mode | `x18n/decorations` + `TextEditorDecorationType`. Falls back to LSP inlay hints when in-place is off. Same options as i18n-ally: `annotations`, `annotationInPlace`, `annotationMaxLength`, `annotationDelimiter`. |
-| Hover, completion, definition, references, rename, diagnostics, code actions | Standard LSP. |
-| Activity bar container with views: Current File, Progress, Keys, Usage Report, Reviews | `x18n/fileKeys`, `x18n/progress`, `x18n/tree`, `x18n/usageReport`, review requests. Refresh on `x18n/changed`. |
-| Status bar: display locale and source locale | `x18n/projects`, `x18n/setDisplayLocale`. |
+| In-place annotations, **on by default** | `x18n/decorations` + `TextEditorDecorationType` (details below). |
+| After-key hints | LSP inlay hints, when in-place is off and as its fallback. |
+| Definition, implementation, references, rename, hover, completion, diagnostics, code actions | Standard LSP ([07-lsp.md](./07-lsp.md)). |
+| Activity bar container with views **Current File, Progress, Keys, Usage Report** | `x18n/fileKeys`, `x18n/progress`, `x18n/tree`, `x18n/usageReport`. Refresh on `x18n/changed`. A Reviews view follows in 1.x. |
+| Status bar: display locale | `x18n/projects`, `x18n/setDisplayLocale`. |
 | x18n UI panel | Webview panel whose content is an `<iframe>` of `asExternalUri(url)` from `x18n/openUi`. |
-| Key editor | Same UI, opened at the key route (`#/keys/<key>`), replaces the i18n-ally Vue 2 webview. |
-| Review comments | VS Code Comments API threads on key usages and resource lines, backed by review requests. |
-| Schema validation | `jsonValidation` for `x18n.config.json`; `yaml.schemas` contribution for `x18n.config.y?(a)ml` and `*.x18n-plugin.y?(a)ml`. |
-| Copy translate prompt | Command and hover link, via `x18n/translatePrompt`, to the clipboard. |
-| i18n-ally migration | When `.vscode/settings.json` has `i18n-ally.*` keys and no x18n config exists, offer "Migrate from i18n-ally" (runs the migration through the server, shows the diff). |
+| Key editor | The same UI, opened at the key route (`#/keys/<key>`), replacing the i18n-ally Vue 2 webview. |
+| Rename key prefix | Command and code action on resource parent nodes (also the LSP's normal rename there). |
+| Schema validation | `jsonValidation` for `x18n.config.json`; `yaml.schemas` for `x18n.config.y?(a)ml` and `*.x18n-plugin.y?(a)ml`. |
+| Copy translate prompt | Command and hover link, through `x18n/translatePrompt`, to the clipboard. |
+| i18n-ally migration | When `.vscode/settings.json` has `i18n-ally.*` keys and no x18n config exists, offer "Migrate from i18n-ally": it runs the migration through the server and shows the diff. |
 
-## Webview embedding details
+### In-place annotations
+
+On by default, like i18n-ally:
+- In code files, including Vue and Svelte templates, the key text is hidden and the display-locale value is shown instead. Resource files never get in-place annotations.
+- On the cursor line and inside selections, the raw key is revealed, so editing always shows the real text.
+- When the value is missing, the key itself is shown in a warning color.
+- Dynamic keys, and keys too long for the line, fall back to the after-key hint.
+- The display locale defaults to the source locale and can be switched from the status bar.
+
+## Webview embedding
 
 - The webview sets a CSP that allows `frame-src` of the external URI only.
-- Theme: the iframe URL carries `?theme=dark|light|high-contrast`, and the webview script forwards `vscode` theme changes with `postMessage` to the iframe. The UI listens only for messages from its parent with the expected shape.
+- Theme: the iframe URL carries `?theme=dark|light|high-contrast`, and the webview script forwards VS Code theme changes to the iframe with `postMessage`. The UI accepts only messages from its parent with the expected shape.
 - In Remote, Codespaces and WSL, `asExternalUri` forwards the port. The server binds to loopback only.
-- Auth: the token from `x18n/openUi` is passed in the URL fragment, which devframe reads as a magic link, so it is not sent in requests or logs.
+- Auth: the token from `x18n/openUi` is passed in the URL fragment, which devframe reads as a magic link, so it never appears in requests or logs.
 
 ## Settings
 
-Only editor UX settings, under `x18n.*`: `enabled`, `annotations`, `annotationInPlace`, `annotationMaxLength`, `annotationDelimiter`, `displayLocale`, `codeLens`, `trace.server`. Everything about the project is in the config file, so CLI, CI and editor agree.
+Editor UX only. There are no project settings and no overrides of `x18n.config.ts`:
+- `x18n.enabled`
+- `x18n.annotations`
+- `x18n.inPlace` (default `true`)
+- `x18n.annotationMaxLength` (default 40)
+- `x18n.displayLocale`
+- `x18n.codeLens`
+- `x18n.trace.server`
 
 ## Commands
 
-Generated into `src/generated/meta.ts` by `vscode-ext-gen`. Initial set: `x18n.openUi`, `x18n.openKey`, `x18n.setDisplayLocale`, `x18n.setSourceLocale`, `x18n.editKey`, `x18n.renameKey`, `x18n.deleteKey`, `x18n.extract`, `x18n.extractFile`, `x18n.copyTranslatePrompt`, `x18n.goToNextUsage`, `x18n.goToPrevUsage`, `x18n.restartServer`, `x18n.migrateFromI18nAlly`, `x18n.showOutput`.
+Generated into `src/generated/meta.ts` by `vscode-ext-gen` (`--scope x18n`). Initial set:
+- `x18n.openUi`, `x18n.openKey`, `x18n.setDisplayLocale`
+- `x18n.editKey`, `x18n.renameKeyPrefix`, `x18n.deleteKey`
+- `x18n.extract`, `x18n.extractFile`, `x18n.copyTranslatePrompt`
+- `x18n.goToNextUsage`, `x18n.goToPrevUsage`
+- `x18n.toggleInPlace`, `x18n.restartServer`, `x18n.migrateFromI18nAlly`, `x18n.showOutput`
 
 ## Testing
 
 - Unit tests for view models with a fake language client.
-- `@vscode/test-electron` e2e on one fixture: activation, inlay hint text, a rename, the UI panel opens (M8 exit criteria).
+- `@vscode/test-electron` e2e on one fixture:
+  - activation
+  - an in-place decoration
+  - rename on a typed key literal reaches x18n with tsserver active
+  - references show no duplicates
+  - the UI panel opens

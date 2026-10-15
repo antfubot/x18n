@@ -8,8 +8,14 @@ Find hard-coded user-facing strings in source code and turn them into keys. Port
 2. **Score.** Rules return a score (`must-include`, `should-include`, `none`, `should-exclude`, `must-exclude`), folded like i18n-ally `shouldExtract`: a `must-*` wins at once, otherwise the last `should-*`. Built-in rules port the i18n-ally ones: spaces and letters, camelCase or SCREAMING_CASE (exclude), digits only (exclude), non-ASCII letters (include), URLs and paths (exclude), strings that already contain a translate call (exclude). Ignored contexts: `console.*`, `import` and `require` specifiers, object keys, type positions, `className`/`class`/`style`/`key`/`ref` attributes, configured ignored attributes and callees.
 3. **Ignore lists.** Config `extract.ignore` (strings or regex) and per-file `extract.ignoreByFile`. The "ignore this string" code action writes there. Inline `// x18n-ignore` comments work too.
 4. **Plan.** For each accepted candidate:
-   - **Key**: strategy `slug` (default), `source`, `random`, `empty`; case style (`camel`, `snake`, `kebab`, `dot`); prefix template with `{fileName}`, `{dirName}`, `{component}`; max length; dedupe suffix. If the same text already exists as a value in the source locale, reuse that key (configurable).
-   - **Target resource**: the write target strategy of [04-config.md](./04-config.md).
+   - **Key**:
+     - Default: a bare camelCase slug with no prefix, as in i18n-ally ("Forgot password?" becomes `forgotPassword`).
+     - Other strategies: `source`, `random`, `empty`.
+     - Case styles: `camel`, `snake`, `kebab`, `dot`.
+     - An optional prefix template with `{fileName}`, `{dirName}` or `{component}`.
+     - A max length, and a numeric suffix when the key exists with a different text.
+     - If the same text already exists as a value in the source locale, that key is reused (configurable).
+   - **Target resource**: the new-key placement rule of [02-core.md](./02-core.md) (namespace, then longest prefix, then first resource).
    - **Replacement**: from refactor templates. Presets give templates per kind (vue-i18n: `{{ $t('{key}') }}` in templates, `t('{key}')` in script setup with `useI18n` present, `:{attr}="$t('{key}')"` for attributes). Config can add templates filtered by kind and file globs. When several templates apply, the plan has a decision.
    - **Imports**: a template can require an import or a setup line (`const { t } = useI18n()`); the plan adds it once per file when missing.
 5. **Apply.** One `project.plan([{ type: 'extract', items }])` call: source edits plus resource edits in one plan, so the LSP can return one `WorkspaceEdit`.

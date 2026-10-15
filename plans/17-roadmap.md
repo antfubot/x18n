@@ -1,123 +1,160 @@
 # 17 - Roadmap
 
-Each milestone is one or a few PRs. A milestone is done when its exit criteria pass in CI. Order follows dependencies; M9 to M12 can run in parallel once M7 is done.
+Each milestone is one or a few PRs. A milestone is done when its exit criteria pass in CI. Milestones up to M11 make 1.0. Everything after is 1.x.
 
 ## M0 - Plan and scaffold (this PR)
 
 - `plans/` documents.
 - pnpm monorepo with catalogs, Turborepo, `tsconfig.base.json`, ESLint, knip, Vitest projects, tsnapi.
-- Packages with a minimal real seed each: `@x18n/core` (plugin and config types, `definePlugin`, `defineConfig`, memory host), `@x18n/builtins` (`json` format), `@x18n/node` (node host file read and write), `x18n` (CLI with `--version`), `@x18n/lsp` (server that answers `initialize`), `@x18n/ui` (devframe definition, Nuxt SPA shell), `x18n-vscode` (activates and starts the LSP), `docs` (comark-docs layer, landing).
+- Each package gets a minimal real seed:
+  - `@x18n/core`: plugin, preset and config types, `definePlugin`, `definePreset`, `defineConfig`, memory host
+  - `@x18n/builtins`: `json` format
+  - `@x18n/node`: node host that reads and writes files
+  - `x18n`: CLI with `--version`
+  - `@x18n/lsp`: server that answers `initialize`
+  - `@x18n/ui`: devframe definition and a Nuxt SPA shell
+  - `x18n-vscode`: activates, starts the LSP, and has staged packaging as `antfu.x18n`
+  - `docs`: comark-docs layer and a landing page
+- Root `x18n.config.ts` for the UI's own messages (dogfooding).
 
 **Exit:** all five gates pass.
 
 ## M1 - Core engine, read path
 
-- Domain types, `KeyString` codec, locale tags (port).
-- Config schema (valibot), `defineConfig`, resolution with origins, JSON Schema generation at build.
+- Domain types, `KeyString` codec, locale codes as found, plus the `localeInfo` display parse.
+- Config schema (valibot), resolution with origins, `projects` with inheritance, JSON Schema generation at build.
 - Plugin runner: order, presets, `config` hooks, conflicts, `explain()`.
-- `pattern` finder (port of PathMatcher), `json`, `jsonc`, `yaml` formats (read).
+- `pattern` finder (port of PathMatcher). Formats `json`, `jsonc`, `json5`, `yaml` (read).
 - Key index, `project.keys()`, `get`, `message`, coverage.
-- Checks runner + `missing-translation`, `empty-translation`, `key-conflict`.
+- Checks runner, `recommended` and `strict` sets, and the checks `missing-translation`, `empty-translation`, `key-conflict`, `locale-code-conflict`.
 
-**Exit:** memory-host tests on 3 fixtures; config schema snapshot; type tests for `defineConfig` and `definePlugin`.
+**Exit:**
+- memory-host tests on 3 fixtures
+- config schema snapshot
+- type tests for `defineConfig`, `definePlugin`, `definePreset`
 
-## M2 - Node host and CLI read commands
+## M2 - Node host, config loading, CLI read commands and `x18n check`
 
-- Node host: glob with gitignore, watch, cache.
-- Config loading for all file types, YAML plugin loading.
-- Manifest readers, preset detection; presets `vue-i18n` and `i18next` (resources and key hooks only).
-- CLI: `status`, `keys`, `get`, `locales`, `doctor`, `check`, `schema`, `init`; reporters `pretty`, `json`, `markdown`, `github`.
+- Node host: glob with gitignore, watch, persistent cache.
+- Config loading for `x18n.config.ts` (primary) and for YAML and JSON. YAML plugin loading.
+- Manifest readers and preset detection. Tier 1 presets get resources and key hooks.
+- CLI commands:
+  - bare `x18n` (status)
+  - `status`, `keys`, `get`, `locales`, `doctor`, `schema`, `init` (writes `x18n.config.ts`)
+- **`x18n check`**, behaving like `tsc`:
+  - tsc-style lines with a code frame, and a "Found N errors in M files" summary
+  - `--watch`, `--strict`, `--locale`, `--max-warnings`
+- Reporters: `pretty`, `json`, `markdown`, `github`.
 - JSON contract v1 for these commands.
 
-**Exit:** CLI snapshot tests on fixtures; `x18n check` runs in this repo's CI against `packages/ui/app/locales`.
+**Exit:**
+- CLI snapshot tests on fixtures
+- this repo's CI runs `x18n check` with the root `x18n.config.ts`
 
 ## M3 - Usage scanning and analysis
 
-- `regex` scanner (port), `js` scanner on oxc with call specs and alias tracking, `vue` scanner.
-- Scopes and namespaces from factories, dynamic prefix usages, derived keys.
+- `regex` scanner (port).
+- `js` scanner on oxc. It matches by name and covers:
+  - aliases, declared wrappers, params with configured type annotations
+  - same-file constants, `@x18n-key` markers
+  - the i18next selector form
+- `vue` and `svelte` scanners.
+- Scopes and namespaces from factories, dynamic prefix usages, derived keys, opt-outs.
 - Usage index with per-file hashes and persistent cache.
-- Checks `missing-key`, `unused-key`. CLI `usages`, `keys --unused`.
-- Tier 1 presets complete for scanning: vue-i18n, nuxt-i18n, i18next, react-i18next, next-intl, react-intl, svelte-i18n, vscode-extension.
-- Benchmark fixture and budgets.
+- Checks `missing-key` and `unused-key`. CLI `usages` and `keys --unused`.
+- Benchmark fixture; budgets tracked from here.
 
-**Exit:** parity tests against i18n-ally examples for tier 1 presets (same keys found).
+**Exit:** parity tests against i18n-ally examples for the tier 1 presets (same keys found).
 
 ## M4 - Edits and write commands
 
 - Edit planner, decisions, stale-plan detection.
-- In-place `edit` for json, jsonc, yaml; `serialize` fallback; key style handling; `keepFilled`; target strategies.
-- Placeholder syntaxes per preset, `placeholder-mismatch` and `invalid-syntax` checks.
-- CLI `set`, `apply`, `rename` (with usage edits), `delete`, `fill`, `format`, all with `--dry-run`.
+- In-place `edit` for json, jsonc and yaml. `serialize` fallback, key-style handling, `keepFilled`.
+- New-key placement: namespace, then longest prefix, then first resource; ask only on a tie.
+- Rename:
+  - whole key, and subtree (renaming a parent)
+  - across namespaces (moves entries, creates files)
+  - re-nesting with cleanup of empty parents
+  - refuses on conflict
+  - rewrites the static part of dynamic usages
+- Placeholder syntaxes per preset. Checks `placeholder-mismatch` and `invalid-syntax`.
+- CLI `set`, `apply`, `rename`, `delete`, `fill`, `format`, all with `--dry-run`.
 
-**Exit:** round-trip tests prove bytes outside edited ranges stay the same; rename updates code in all tier 1 presets.
+**Exit:**
+- round-trip tests prove bytes outside the edited ranges stay the same
+- rename updates code in all tier 1 presets
+- subtree and cross-namespace rename fixtures pass
 
-## M5 - Agent surface
+## M5 - Language server and minimal VS Code client
 
-- Translate and review prompt builders, `translatePrompt` hook, glossary.
+- Overlay host and one project per folder.
+- Full workspace index at startup with `$/progress`. References and rename wait for it.
+- Definition goes to the source-locale entry. Implementation lists every locale's entry. References work from code and from resources.
+- Rename from usages and from resource keys: whole key in code and for flat keys, subtree on parent nodes.
+- Diagnostics identical to `x18n check`. Hover, inlay hints, completion, code actions, symbols.
+- Custom `x18n/*` protocol.
+- VS Code client: starts the server, handles TypeScript coexistence (provider order, TS 7 middleware, deduplicated references), and in-place annotations.
+
+**Exit:**
+- in-process LSP tests for each feature
+- a VS Code e2e test proves that rename on a typed key literal reaches x18n, with TS 6 tsserver active
+
+## M6 - Agent surface
+
+- Translate and review prompt builders, the `translatePrompt` hook, glossary.
 - CLI `prompt translate`, `prompt review`, paging with cursors.
-- devframe definition in `@x18n/ui` node side (no SPA needed yet), `x18n mcp`.
-- Skill `packages/cli/skills/x18n/SKILL.md`; test that commands in the skill exist.
+- devframe definition in the `@x18n/ui` node side, and `x18n mcp`.
+- Skill `packages/cli/skills/x18n/SKILL.md`, with a test that every command in the skill exists.
 
 **Exit:** a scripted agent loop on a fixture (prompt, apply generated JSON, check) ends with zero missing translations.
 
-## M6 - UI: dev server and static build
+## M7 - UI
 
-- Nuxt SPA with `@antfu/design`, `UiBackend` with server and static adapters.
-- Pages: overview, keys grid, key detail, locale, usages, project.
-- `x18n ui`, `x18n build`. MCP over HTTP on the dev server.
+- Nuxt SPA with `@antfu/design`, and a `UiBackend` with `server` and `static` adapters.
+- Pages: overview, keys grid, key detail, locale, usages, extraction (wired in M9), project.
+- `x18n ui` with auth always on: one-click magic link, bearer token for HTTP MCP, `--no-auth` for CI only. `x18n build`.
+- The LSP hosts the UI server through `x18n/openUi`.
 - UI messages localized with x18n.
 
-**Exit:** Playwright e2e for dev (edit a value, file changes on disk) and static (renders, no edit controls).
+**Exit:** Playwright e2e for dev (edit a value, the file changes on disk; an unauthenticated request is refused) and for static (renders, no edit controls).
 
-## M7 - Language server
+## M8 - VS Code extension complete
 
-- Overlay host, project per folder, watched files.
-- Diagnostics, hover, inlay hints, completion, definition, references, rename, code actions, symbols.
-- Custom `x18n/*` protocol; `x18n/openUi` hosting the UI server.
-- Docs for Neovim, Zed, Helix.
+- Sidebar views: Current File, Progress, Keys, Usage Report. Status bar locale switcher.
+- UI panel (webview iframe), commands, schema validation contributions.
+- Packaging through a staged copy named `x18n`, for the id `antfu.x18n`, on the Marketplace and Open VSX. Publishing waits for human approval.
 
-**Exit:** in-process LSP tests for each feature; stdio smoke test.
-
-## M8 - VS Code extension
-
-- Client, decorations and in-place mode, views, status bar, UI webview panel, schema validation contributions, commands.
-- Packaging and publishing scripts (Marketplace and Open VSX). Publishing waits for human approval.
-
-**Exit:** test-electron smoke test; manual check list in the PR.
+**Exit:** test-electron smoke test; manual checklist in the PR.
 
 ## M9 - Extraction
 
-- Extractors and rules (port), key generation, templates per preset, plan files.
+- Extractors and rules (port), bare-slug key generation, templates per preset, plan files.
 - CLI `extract`, LSP code actions, UI `/extract`, MCP tools.
 
 **Exit:** extraction fixtures per tier 1 preset produce the expected source and resource edits.
 
-## M10 - Reviews
-
-- YAML review store, CLI `review *`, LSP and VS Code comments, UI threads, stale approvals.
-
-**Exit:** review ops in one plan with message edits; rename moves threads.
-
-## M11 - Migration and preset parity
+## M10 - i18n-ally migration
 
 - `x18n migrate i18n-ally` and the VS Code prompt.
-- Tier 2 presets and formats.
 
-**Exit:** migration fixtures; parity tests for tier 2.
+**Exit:** migration fixtures; a migrated config finds the same keys and usages as i18n-ally on its examples, for tier 1 presets.
 
-## M12 - In-browser workspace and docs playground
-
-- Browser host, worker, WASM scanners, `local` backend.
-- Docs `/play`, `/demo`, schemas.
-
-**Exit:** Playwright test on the docs build: open the demo fixture, edit, see the change in the file view.
-
-## M13 - Performance and scale
+## M11 - Performance (1.0 gate)
 
 - Worker-thread scanning in the node host, cache tuning, LSP memory work.
 
-**Exit:** budgets in [15-quality.md](./15-quality.md) pass on the benchmark fixture.
+**Exit:** the budgets in [15-quality.md](./15-quality.md) pass on the benchmark fixture; CI fails on a regression over 20%.
 
-## Release
+## 1.0 release
 
-The first npm and Marketplace release follows M8 at the earliest. Every release (version bump, tag, publish) needs explicit human approval.
+Packages and the extension share one version (`bumpp -r`). Every release needs explicit human approval.
+
+## 1.x
+
+| Milestone | Content |
+| --- | --- |
+| M12 Reviews | YAML review store, CLI `review *`, LSP, VS Code comments and Reviews view, UI threads ([12-reviews.md](./12-reviews.md)) |
+| M13 Typegen | `x18n typegen`, preset augmentations, typed params, LSP regeneration, `typegen-stale` check ([18-typegen.md](./18-typegen.md)) |
+| M14 In-browser workspace | Browser host, worker, WASM scanners, `local` backend, docs `/play` and `/demo` |
+| M15 Tier 2 and 3 | Remaining presets and formats from [05-builtins.md](./05-builtins.md), accessor scanners (`m.*`, `LL.*`) |
+| M16 Other editors | Tested setups and docs for Neovim, Zed, Helix |

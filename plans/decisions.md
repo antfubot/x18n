@@ -22,7 +22,7 @@ Each entry: what was decided, what else was considered, and why. New decisions g
 ## D4 - AST-first scanners, regex kept
 
 - Considered: regex only (i18n-ally parity), AST only.
-- Why: AST scanning handles aliases, scopes and multi-line calls. Regex stays for i18n-ally parity, languages without an AST scanner, and YAML plugins. Both are scanners; neither is special in core.
+- Why: AST scanning handles aliases, scopes, constants, selectors and multi-line calls. Regex stays for i18n-ally parity, languages without an AST scanner, and YAML plugins. Both are scanners; neither is special in core.
 
 ## D5 - Unified plugin object plus presets
 
@@ -39,17 +39,17 @@ Each entry: what was decided, what else was considered, and why. New decisions g
 - Considered: a second server in the extension host; a postMessage RPC bridge.
 - Why: one `Project` per process keeps the editor and UI in sync without reloads. devframe has no postMessage transport in its public API. `asExternalUri` makes it work in remote setups.
 
-## D8 - Deployed site: static report and in-browser workspace
+## D8 - Deployed site: static report in 1.0, in-browser workspace in 1.x
 
-- Considered: static report only.
-- Why: the static report covers CI and translators. The in-browser workspace lets people try x18n with no install, and is cheap once D2 holds.
+- Considered: static report only; both in 1.0.
+- Why: the static report covers CI and translators. The in-browser workspace lets people try x18n with no install, and is cheap once D2 holds, but it is not needed for 1.0 (D17).
 
 ## D9 - No machine translation engines; translate prompts instead
 
 - Considered: porting i18n-ally translators.
 - Why: agents and LLMs already translate well with context. x18n's value is the context (usages, glossary, placeholders, style examples) and safe write-back (`x18n apply` with checks). It also removes API keys from the tool.
 
-## D10 - Reviews in `.x18n/reviews.yml`
+## D10 - Reviews in `.x18n/reviews.yml` (1.x)
 
 - Considered: no built-in store; comments inside locale files.
 - Why: git-tracked, format-independent, and reviewable in PRs. The store is pluggable for other backends.
@@ -73,12 +73,86 @@ Each entry: what was decided, what else was considered, and why. New decisions g
 
 - Why: ESM-only packages, `fs.glob`-era Node APIs, current LSP client features.
 
-## D15 - Locale files are never executed
+## D15 - Locale files are static by default; execution is an explicit opt-in
 
-- Why: i18n-ally ran JS/TS locale files through ts-node, which runs user code with no clear consent. Static reading covers the common `export default { ... }` case.
+- Considered: never execute; a global switch.
+- Decided: `resources: [{ pattern, execute: true }]`, Node only, executed resources read-only.
+- Why: i18n-ally ran JS/TS locale files through ts-node, which runs user code with no clear consent. Static reading covers the common `export default { ... }` case. Computed locale files still exist, so they get a scoped, visible escape hatch.
 
-## Open questions
+## D16 - Keys behave like imported symbols
 
-- Docs domain. It feeds `site.url` and `llms.domain` of the docs site and the hosted `$schema` URLs.
-- Marketplace publisher and extension id (`antfu.x18n-vscode` for now).
-- Whether `@x18n/ui` ships its SPA inside the package or as a separate `--assets` package served through devframe remote assets (smaller install for CLI-only users).
+- In code the whole key is the symbol. In resource files the node under the cursor is the symbol, so renaming a parent renames its subtree; flat keys are whole keys.
+- Definition goes to the source locale; implementation lists all locales; references work from both sides and include "possible" prefix usages.
+- Rename covers all locales, usages, dynamic prefixes and review threads. It can re-nest and move namespaces, and refuses on conflict.
+- References and rename wait for a full workspace index.
+- Considered: segment-level symbols in code (rejected as surprising for the rename box), partial results while indexing.
+- Why: the user asked for `t('xxx.yyy')` to be as reliable as a TS import.
+
+## D17 - 1.0 scope
+
+1.0 includes:
+- core, CLI (check, read/write, prompts, MCP, skill), LSP and VS Code
+- UI (dev, static, VS Code panel)
+- extraction, i18n-ally migration, tier 1 presets and formats, performance budgets
+
+1.x adds reviews, typegen, the in-browser workspace, tier 2 and 3, and other editors. The LSP milestone moves right after edits (M5).
+
+- Why: the editor experience and `x18n check` are the core value. The rest builds on the same engine without changing it.
+
+## D18 - Name-based usage detection
+
+- Decided: a call counts when its callee name is in the callee set. That set is declared names, plus same-file aliases, declared wrappers, and params typed with configured types. There is no per-file gate; opt-outs handle false positives.
+- Considered: binding-resolved detection with scope analysis (fewer false positives, misses `t` that arrives through untyped paths).
+- Why: same behaviour as i18n-ally, which users rely on. It is simpler and works for injected or global translate functions.
+
+## D19 - TypeScript coexistence without a tsserver plugin
+
+- Decided:
+  - provider ordering against TS 6 tsserver
+  - TS 7 `registerLspMiddleware` asking the x18n LSP per request
+  - deduplicated references in the client
+- Considered: a thin tsserver plugin that yields rename, with a sync bridge to ask the LSP; a full tsserver plugin.
+- Why: TS 7 never loads tsserver plugins, and a sync bridge blocks tsserver's only thread. Research is summarized in [08-vscode.md](./08-vscode.md).
+
+## D20 - `x18n check` is the typecheck of i18n
+
+- tsc-style output, `--watch`, read-only (no `--fix`).
+- `recommended` set: invalid keys and broken messages are errors; untranslated and unused keys are warnings. `strict` turns warnings into errors.
+- Untranslated keys are reported once per key, at the source entry.
+- The editor shows exactly the same diagnostics.
+- Why: one mental model, the same as `tsc` and the TS errors in an editor.
+
+## D21 - `x18n.config.ts` is primary; no editor overrides
+
+- TS config first. YAML and JSON stay supported for non-JS projects and the browser.
+- `projects` globs with inheritance for monorepos.
+- VS Code settings are editor UX only.
+- Considered: an `x18n.config` override object in VS Code settings (rejected: CLI and editor would disagree).
+
+## D22 - Locale codes as found
+
+- Codes are never normalized. Near-duplicates get a warning. Display data comes from a lenient parse or a `localeInfo` hook.
+- Considered: BCP 47 normalization (i18n-ally default).
+- Why: what is in the files is what the user sees and what x18n writes.
+
+## D23 - Editor UX defaults
+
+- In-place annotations are on by default and reveal the key on the cursor line.
+- Four sidebar views.
+- Extracted keys are bare slugs.
+- Why: i18n-ally parity for the habits its users already have.
+
+## D24 - Identity and access
+
+- Extension id `antfu.x18n`, through a staged packaging copy, because Turborepo needs unique workspace names.
+- Docs at `x18n.antfu.dev`.
+- One lockstep version for all packages and the extension.
+- `x18n ui` auth always on: magic link, issued tokens, bearer token for HTTP MCP, `--no-auth` for CI only.
+- The UI SPA ships inside `@x18n/ui`.
+
+## D25 - Typegen design (1.x)
+
+- x18n builds the types from the merged source-locale view, and presets emit them as library augmentations.
+- Params are typed where the library allows.
+- One committed `x18n.d.ts`, opt-in, TS projects only.
+- It runs from the CLI and the LSP, guarded by the `typegen-stale` check. See [18-typegen.md](./18-typegen.md).

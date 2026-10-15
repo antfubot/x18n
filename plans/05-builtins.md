@@ -14,7 +14,7 @@
 
 `x18n` re-exports `presets` as `x18n/presets` so a TS config has one import source.
 
-Tiers decide the milestone: tier 1 ships with the first release, tier 2 with i18n-ally parity (M11), tier 3 when someone asks.
+Tiers decide the release: tier 1 ships in 1.0 with full parity tests, tier 2 in 1.x (M15), tier 3 when someone asks.
 
 ## Formats
 
@@ -28,7 +28,7 @@ Tiers decide the milestone: tier 1 ships with the first release, tier 2 with i18
 | `properties` | properties | yes | in place | own line-based parser | 2 |
 | `ftl` | ftl | yes | in place | `@fluent/syntax` | 2 |
 | `arb` | arb | yes | in place (json) | json + `@@locale` and `@key` metadata | 2 |
-| `js` / `ts` | js, mjs, cjs, ts, mts | static only: `export default { ... }` and object literals | in place | `oxc-parser` to read, `magicast` to write | 2 |
+| `js` / `ts` | js, mjs, cjs, ts, mts | static by default: `export default { ... }` and object literals; executed with `execute: true` | in place when static; read-only when executed | `oxc-parser` to read, `magicast` to write | 2 |
 | `php` | php | static `return [ ... ]` arrays | serialize | own parser | 2 |
 | `xliff` | xlf, xliff | yes | in place | small XML parser | 3 |
 | `ini` | ini | yes | serialize | `ini` | 3 |
@@ -36,7 +36,12 @@ Tiers decide the milestone: tier 1 ships with the first release, tier 2 with i18
 | `android-xml` | xml (`res/values*/strings.xml`) | yes | in place | small XML parser | 3 |
 | `resx` | resx | yes | in place | small XML parser | 3 |
 
-The `js` / `ts` format never runs user code. A file that is not a static literal is reported as `X18N2004` with a hint to use JSON or YAML, instead of i18n-ally's ts-node execution.
+By default the `js` / `ts` format never runs user code. A file that is not a static literal is reported as `X18N2004`, with a hint to use JSON or YAML or to opt in to execution.
+
+Execution is opt-in per resource pattern (`resources: [{ pattern: 'src/locales/{locale}.ts', execute: true }]`):
+- It runs in Node only, through the same loader as `x18n.config.ts`, and re-runs on change.
+- Executed resources are read-only, because computed values cannot be written back. A write fails with a coded error naming the resource.
+- In the browser, executed resources are skipped with a notice.
 
 ## Locale finders
 
@@ -66,7 +71,7 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | --- | --- | --- | --- |
 | `vue-i18n` | vue-i18n, vuex-i18n, @intlify/*, petite-vue-i18n | `$t`, `t`, `tc`, `te`, `d`, `n`, `v-t`, `<i18n-t>`, `useI18n` factory, linked messages `@:key`, `sfc-blocks` | 1 |
 | `nuxt-i18n` | @nuxtjs/i18n | `vue-i18n` + Nuxt `langDir` from `nuxt.config` when static, `i18n/locales` default | 1 |
-| `i18next` | i18next | `t`, namespaces `ns:key`, plural and context suffixes, `{{x}}` placeholders | 1 |
+| `i18next` | i18next | `t`, the selector form `t($ => $.a.b)`, namespaces `ns:key`, plural and context suffixes, `{{x}}` placeholders | 1 |
 | `react-i18next` | react-i18next, next-i18next | `i18next` + `useTranslation(ns)` factory, `<Trans i18nKey>`, `keyPrefix` | 1 |
 | `next-intl` | next-intl | `useTranslations(ns)` / `getTranslations` factories, `t.rich`, `t.markup`, `t.raw`, ICU placeholders | 1 |
 | `react-intl` | react-intl, @formatjs/* | `formatMessage({ id })`, `<FormattedMessage id>`, `defineMessages`, ICU | 1 |
@@ -80,8 +85,8 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 | `transloco` | @jsverse/transloco, @ngneat/transloco | pipe, directive, `*transloco="let t; read: 'scope'"` scopes | 2 |
 | `lingui` | @lingui/core | `po` format, `{locale}/messages.po`, `t` macro, `<Trans>` | 2 |
 | `fluent-vue` | fluent-vue | `ftl` format, `$t`, `<fluent>` blocks | 2 |
-| `paraglide` | @inlang/paraglide-js | `messages/{locale}.json`, `m.key()` member calls | 2 |
-| `typesafe-i18n` | typesafe-i18n | `LL.key()` member calls, TS locale files | 2 |
+| `paraglide` | @inlang/paraglide-js | `messages/{locale}.json`, `m.key()` accessor calls | 2 |
+| `typesafe-i18n` | typesafe-i18n | `LL.a.b()` accessor calls, TS locale files | 2 |
 | `laravel` | composer: laravel/framework | `php` format, `lang/{locale}/{namespace}.php`, `__()`, `trans()`, `@lang` | 2 |
 | `ruby-rails` | Gemfile: rails | `yaml` with top-level locale transform, `t('.lazy')` from view path | 2 |
 | `flutter` | pubspec: flutter_localizations, intl, flutter_i18n | `arb` format, `AppLocalizations.of(context).key` | 2 |
@@ -92,28 +97,33 @@ Detection uses the dependencies listed. "Parity" means the i18n-ally framework w
 
 ## Checks
 
-| Id | Default | Reports |
-| --- | --- | --- |
-| `missing-key` | error | A usage whose key is not defined in the source locale. |
-| `missing-translation` | warning | A key in the source locale that a target locale lacks. |
-| `empty-translation` | warning | An empty string value. |
-| `unused-key` | warning | A key with no usage, after `keysInUse`, derived keys and dynamic prefixes. Skipped when the project has no scanners. |
-| `placeholder-mismatch` | error | Target value placeholders differ from the source value. |
-| `invalid-syntax` | error | Message syntax errors (ICU, vue-i18n linked messages, i18next nesting). |
-| `identical-to-source` | off | Target equals source (often untranslated copy). |
-| `key-conflict` | error | A key is both a leaf and a parent (`a` and `a.b`), or duplicate across files of the same locale and namespace. |
-| `key-style` | off | Key does not match a naming rule (options: `case`, `pattern`). |
-| `hard-string` | off | Detected hard-coded string ([11-extraction.md](./11-extraction.md)). |
-| `review-changes-requested` | info | An open "request change" review ([12-reviews.md](./12-reviews.md)). |
-| `glossary` | off | A glossary term is translated differently from the glossary. |
+`x18n check` and the editor report the same diagnostics ([06-cli.md](./06-cli.md), [07-lsp.md](./07-lsp.md)). "Invalid", "untranslated" and "unused" keys map to these checks:
 
-`recommended()` turns on the defaults above.
+| Id | `recommended` | Reports |
+| --- | --- | --- |
+| `missing-key` | error | Invalid key: a usage whose key is not defined in the source locale. |
+| `invalid-syntax` | error | Message syntax errors (ICU, vue-i18n linked messages, i18next nesting). |
+| `placeholder-mismatch` | error | Target value placeholders differ from the source value. |
+| `key-conflict` | error | A key is both a leaf and a parent (`a` and `a.b`), or is duplicated across files of the same locale and namespace. |
+| `missing-translation` | warning | Untranslated: a source-locale key that target locales lack. One diagnostic per key, at the source entry, listing the missing locales. |
+| `empty-translation` | warning | Untranslated: an empty string value. |
+| `unused-key` | warning | A key with no usage, after `keysInUse`, derived keys and dynamic prefixes. Skipped when the project has no scanners. |
+| `locale-code-conflict` | warning | Two locale codes that differ only in spelling (`zh_CN` and `zh-CN`). |
+| `dynamic-key` | off | A fully dynamic key (`t(key)`) that no check can follow. |
+| `identical-to-source` | off | Target equals source (often untranslated copy). |
+| `key-style` | off | Key does not match a naming rule (options: `case`, `pattern`). |
+| `hard-string` | off | Detected hard-coded string; on with `extract.autoDetect` ([11-extraction.md](./11-extraction.md)). |
+| `glossary` | off | A glossary term is translated differently from the glossary. |
+| `typegen-stale` | error (1.x) | The generated `x18n.d.ts` is out of date ([18-typegen.md](./18-typegen.md)). |
+| `review-changes-requested` | info (1.x) | An open "request change" review ([12-reviews.md](./12-reviews.md)). |
+
+`strict` (config `strict: true` or `x18n check --strict`) turns every warning into an error.
 
 ## Reporters
 
 | Id | Output | Use |
 | --- | --- | --- |
-| `pretty` | Colored terminal tables (coverage per locale, grouped diagnostics) | Humans |
+| `pretty` | tsc-style `path:line:col - error missing-key: message` (check id in place of the TS code) with code frames, then a "Found N errors in M files" summary | Humans |
 | `json` | The versioned JSON contract of [06-cli.md](./06-cli.md) | Tools, agents |
 | `markdown` | Summary and tables | PR comments, agent context |
 | `github` | `::error file=...` workflow commands | GitHub Actions annotations |

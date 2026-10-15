@@ -20,14 +20,16 @@ and writes `x18n.config.ts` (or `--format yml`), `x18n/custom.x18n-plugin.yml` w
 | `ignoredLocales` | `ignoreLocales` |
 | `keystyle` | `keyStyle` |
 | `defaultNamespace` | `namespace.default` |
-| `languageTagSystem` | `localeTags` |
-| `localeCountryMap` | `localeFlags` (UI only) |
+| `languageTagSystem` | dropped; locale codes are used as found |
+| `localeCountryMap` | a `localeInfo` rule in the generated YAML plugin (flags only) |
 | `sortKeys`, `sortCompare`, `sortLocale`, `indent`, `tabStyle`, `keepFulfilled` | `write.sort`, `write.indent`, `write.keepFilled` |
 | `keysInUse`, `usage.derivedKeyRules`, `usage.scanningIgnore` | `usage.keysInUse`, `usage.derivedKeys`, `usage.exclude` |
 | `regex.usageMatch`, `regex.usageMatchAppend`, `regex.key` | a generated YAML plugin with `scanners.regex` |
 | `refactor.templates` | `extract.templates` |
 | `extract.keygenStrategy`, `keygenStyle`, `keyPrefix`, `keyMaxLength`, `targetPickingStrategy`, `ignored`, `ignoredByFiles`, `autoDetect` | `extract.*` with the same meaning |
-| `annotations`, `annotationInPlace`, `annotationMaxLength`, `annotationDelimiter` | VS Code settings `x18n.*` |
+| `annotations`, `annotationInPlace`, `annotationMaxLength` | VS Code settings `x18n.annotations`, `x18n.inPlace`, `x18n.annotationMaxLength` (written to `.vscode/settings.json`, editor UX only) |
+| `annotationDelimiter` | dropped |
+| `parsers.typescript.*` (executed JS/TS locale files) | `execute: true` on the matching `resources` pattern |
 | `review.*` | `review.*` (`user.name` / `user.email` become `review.author`) |
 | `translate.*` | dropped; replaced by translate prompts. The command prints a note. |
 | `disablePathParsing` | `keyStyle: 'flat'` |

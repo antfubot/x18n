@@ -1,13 +1,13 @@
-# 12 - Reviews
+# 12 - Reviews (1.x)
 
-Comments, approvals, change requests and suggested values on messages. A port of i18n-ally's review system, moved out of `.vscode/` and made usable from every surface.
+Comments, approvals, change requests and suggested values on messages. A port of i18n-ally's review system, moved out of `.vscode/` and made usable from every surface. Reviews ship after 1.0 (M12). `x18n migrate i18n-ally` already converts `.vscode/i18n-ally-reviews.yml` to `.x18n/reviews.yml` in 1.0, so existing reviews carry over.
 
 ## Storage
 
 Default file `.x18n/reviews.yml`, tracked in git, so reviews travel with the branch and show up in PR diffs.
 
 ```yaml
-# yaml-language-server: $schema=../node_modules/@x18n/core/schema/reviews.json
+# yaml-language-server: $schema=https://x18n.antfu.dev/schema/reviews.json
 x18n: 1
 threads:
   'auth:login.title':

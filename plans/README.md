@@ -1,6 +1,6 @@
 # x18n plans
 
-x18n is a tool for viewing and maintaining the i18n files of any project, by humans and by agents. It works with any editor. It takes the ideas of [i18n-ally](https://github.com/lokalise/i18n-ally) and rebuilds them as layers:
+x18n is a tool for viewing and maintaining the i18n files of any project, by humans and by agents. Its language server follows the LSP standard, and VS Code is the supported editor for 1.0. It takes the ideas of [i18n-ally](https://github.com/lokalise/i18n-ally) and rebuilds them as layers:
 
 ```
 @x18n/core  ->  x18n (CLI)  ->  @x18n/lsp  ->  x18n-vscode
@@ -31,26 +31,30 @@ These documents are the plan. Each document owns one area. Where code and plan d
 | 15 | [Quality](./15-quality.md) | Typing rules, tests, fixtures, performance budgets |
 | 16 | [Docs site](./16-docs.md) | comark-docs site and hosted playground |
 | 17 | [Roadmap](./17-roadmap.md) | Milestones, order, exit criteria |
+| 18 | [Typegen](./18-typegen.md) | Generated TS key types (1.x) |
 | -- | [Decisions](./decisions.md) | Decision log with reasons |
 | -- | [Glossary](./glossary.md) | Canonical names |
 
 ## Status
 
-| Milestone | Title | Status |
-| --- | --- | --- |
-| M0 | Plan and monorepo scaffold | IN PROGRESS |
-| M1 | Core engine (read path) | TODO |
-| M2 | Node host, config loading, CLI read commands | TODO |
-| M3 | Usage scanning and analysis | TODO |
-| M4 | Edits and write commands | TODO |
-| M5 | Agent surface (prompts, MCP, skill) | TODO |
-| M6 | UI: dev server and static build | TODO |
-| M7 | Language server | TODO |
-| M8 | VS Code extension | TODO |
-| M9 | Extraction | TODO |
-| M10 | Reviews | TODO |
-| M11 | i18n-ally migration and preset parity | TODO |
-| M12 | In-browser workspace and docs playground | TODO |
-| M13 | Performance and scale | TODO |
+| Milestone | Title | Release | Status |
+| --- | --- | --- | --- |
+| M0 | Plan and monorepo scaffold | 1.0 | IN PROGRESS |
+| M1 | Core engine (read path) | 1.0 | TODO |
+| M2 | Node host, config loading, CLI read commands, `x18n check` | 1.0 | TODO |
+| M3 | Usage scanning and analysis | 1.0 | TODO |
+| M4 | Edits and write commands | 1.0 | TODO |
+| M5 | Language server and minimal VS Code client | 1.0 | TODO |
+| M6 | Agent surface (prompts, MCP, skill) | 1.0 | TODO |
+| M7 | UI: dev server, static build, VS Code panel | 1.0 | TODO |
+| M8 | VS Code extension complete | 1.0 | TODO |
+| M9 | Extraction | 1.0 | TODO |
+| M10 | i18n-ally migration | 1.0 | TODO |
+| M11 | Performance (1.0 gate) | 1.0 | TODO |
+| M12 | Reviews | 1.x | TODO |
+| M13 | Typegen | 1.x | TODO |
+| M14 | In-browser workspace and docs playground | 1.x | TODO |
+| M15 | Tier 2 and 3 presets and formats | 1.x | TODO |
+| M16 | Other editors (Neovim, Zed, Helix) | 1.x | TODO |
 
 Status values: TODO, IN PROGRESS, DONE, BLOCKED (with reason). The full breakdown is in [17-roadmap.md](./17-roadmap.md).

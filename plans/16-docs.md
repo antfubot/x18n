@@ -1,5 +1,7 @@
 # 16 - Docs site
 
+The site lives at `https://x18n.antfu.dev` (`site.url` and `llms.domain`).
+
 `docs/` is a Nuxt app that extends the `comark-docs` layer, the same setup as devframe's docs (`devframes/devframe` `docs/`):
 
 - `nuxt.config.ts` with `extends: [process.env.COMARK_DOCS_LAYER || 'comark-docs']`, `site`, `llms` (generates `llms.txt` and `llms-full.txt` for agents).
@@ -13,7 +15,7 @@
 docs/content/
   index.md                 landing
   1.guide/                 what x18n is, getting started, config, concepts (project, resource, key, usage), monorepos
-  2.surfaces/              cli, vscode, other editors (neovim, zed, helix), ui (dev, static, playground), ci
+  2.surfaces/              cli and `x18n check`, vscode, ui (dev, static), ci; other editors in 1.x
   3.agents/                workflows, translate prompts, mcp, skill
   4.presets/               one page per preset: detection, defaults, supported syntax
   5.plugins/               writing plugins: yaml, ts, each capability, explain/doctor, publishing
@@ -26,8 +28,8 @@ Generated pages (config, CLI, contracts, error codes) are built from the code by
 
 ## Hosted parts
 
-- `/play`: the in-browser workspace ([09-ui.md](./09-ui.md)), the `@x18n/ui` SPA built in `local` mode and copied into the docs output.
-- `/schema/config.json`, `/schema/plugin.json`, `/schema/reviews.json`.
+- `/play` (1.x): the in-browser workspace ([09-ui.md](./09-ui.md)), the `@x18n/ui` SPA built in `local` mode and copied into the docs output.
+- `/schema/config.json`, `/schema/plugin.json`, `/schema/reviews.json`, the `$schema` targets used in examples.
 - `/demo`: a static report (`x18n build`) of a fixture project.
 
 ## Scaffold

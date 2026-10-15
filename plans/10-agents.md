@@ -36,14 +36,14 @@ The same builder serves:
 - the UI button "Copy translate prompt" (per locale, per selection, per key),
 - the VS Code command and hover link.
 
-`x18n prompt review --locale de` is the same idea for checking existing translations: the agent reports issues as review comments with `x18n review request-change` or proposes values with `x18n review suggest`.
+`x18n prompt review --locale de` is the same idea for checking existing translations. In 1.0 the agent fixes values with `x18n set` and lists what it changed. Once reviews ship (1.x), it can instead leave `x18n review request-change` comments or `x18n review suggest` values for a human to accept.
 
 ## MCP
 
 Through devframe's MCP adapter (`@devframes/agentic`), from the same devframe definition as the UI:
 
 - `x18n mcp` serves stdio.
-- `x18n ui` also mounts Streamable HTTP MCP at `/__mcp` on loopback, so an agent can work next to a human using the UI and both see the same state.
+- `x18n ui` also mounts Streamable HTTP MCP at `/__mcp` on loopback, behind the bearer token that `x18n ui` prints. An agent can then work next to a human using the UI, and both see the same state.
 
 Tools are the RPC functions marked `agent` in [09-ui.md](./09-ui.md), with descriptions written for agents:
 

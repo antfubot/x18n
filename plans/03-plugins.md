@@ -34,6 +34,10 @@ interface Plugin {
   readonly derivedKeys?: readonly DerivedKeyRule[]
   readonly transformResource?: ResourceTransform
   readonly translatePrompt?: (draft: PromptDraft, ctx: PromptContext) => void
+  /** Display data for a locale code (language name, flag, plural categories). The first plugin that returns a value wins; the built-in lenient parse is last. */
+  readonly localeInfo?: (code: LocaleCode) => LocaleInfo | undefined
+  /** 1.x: emit TS key types as the library's own augmentation (18-typegen.md). */
+  readonly typegen?: TypegenTarget
 }
 
 interface Preset {
@@ -146,27 +150,51 @@ interface ScanResult {
 
 Built-in scanners ([05-builtins.md](./05-builtins.md)):
 
-- **`regex`**: configurable patterns with a `{key}` placeholder, the same model as i18n-ally `usageMatchRegex`. Kept for parity and for YAML plugins.
-- **`js`**: AST scanner using `oxc-parser`. It is driven by **call specs** (data, not code), so presets and YAML plugins can configure it:
+- **`regex`**: configurable patterns with a `{key}` placeholder, the same model as i18n-ally `usageMatchRegex`. Kept for parity, for languages without an AST scanner, and for YAML plugins.
+- **`js`**: AST scanner using `oxc-parser`. It is driven by **call specs**, which are data rather than code, so presets and YAML plugins can configure it.
+- **`vue`**: splits SFCs with `@vue/compiler-sfc`, runs `js` on `<script>`, and walks template expressions (parsed with oxc, offsets mapped back) for `$t()`, `t()`, `v-t`, `<i18n-t keypath>` and `<i18n path>`.
+- **`svelte`**, **`html`**, **`jsx-attr`** (for `<Trans i18nKey>`): the same idea for their syntaxes.
+
+#### How a usage is detected
+
+Detection is **name-based**, like i18n-ally: a call counts when its callee name is in the project's callee set. There is no per-file gate. This means a file does not need to import an i18n module, and shadowing is not checked. The callee set of a file is:
+
+1. **Declared names** from presets and config: `t`, `$t`, `i18n.t`, `i18next.t`, `intl.formatMessage`, ...
+2. **Same-file aliases**:
+   - destructuring from a declared factory (`const { t: tr } = useI18n()`)
+   - renamed imports of a declared name (`import { t as tr } from 'i18next'`)
+   - plain assignment (`const tt = t`)
+3. **Declared wrappers** (`myT(key)`), configured like any call spec.
+4. **Parameters and props whose type annotation names a configured type** (`function f(tr: TFunction)`, `ComposerTranslation`), whatever the parameter is called.
+
+Keys that are not literal arguments are also resolved:
+
+- **Same-file constants**: `const KEY = 'a.b'; t(KEY)`, and `as const` objects (`t(KEYS.title)`). The usage range points at the literal, so rename rewrites the constant.
+- **Markers**: `/* @x18n-key */ 'menu.open'` marks one literal anywhere. `// @x18n-keys` before an array or object marks every string literal in it.
+- **Selectors and accessors**: the i18next selector `t($ => $.a.b)` (tier 1), and member chains on a declared accessor root such as Paraglide `m.a_b()` or typesafe-i18n `LL.a.b()` (tier 2).
+
+Dynamic keys:
+- A template literal with a static prefix (`t(`pages.${id}.title`)`) gives a `dynamic: 'prefix'` usage. Checks treat every key under `pages` as used, and references list it as "possible".
+- A fully dynamic key (`t(key)`) is ignored. The opt-in `dynamic-key` check can report it.
+
+Opt-outs for false positives of name-based matching: `usage.ignoreCallees`, `usage.exclude` globs, and the inline comments `// x18n-disable-next-line` and `/* x18n-disable */ ... /* x18n-enable */`.
 
 ```ts
 interface CallSpec {
-  /** Function or member path: 't', '$t', 'i18n.t', 'i18next.t', 'intl.formatMessage'. */
+  /** Function or member path: 't', '$t', 'i18n.t', 'intl.formatMessage'. */
   readonly callee: string | readonly string[]
-  /** Only count calls whose callee comes from these modules or factories (alias tracking). */
-  readonly from?: readonly ImportSource[]
-  /** Which argument holds the key. Default 0. Object form: `{ arg: 0, property: 'id' }` for formatMessage. */
+  /** 'call' (default): the key is an argument. 'selector': the argument is `$ => $.a.b`. 'accessor': the callee is a root whose member chain is the key (`m.a_b()`, `LL.a.b()`). */
+  readonly kind?: 'call' | 'selector' | 'accessor'
+  /** Which argument holds the key. Default 0. Object form `{ arg: 0, property: 'id' }` for `formatMessage({ id })`. */
   readonly key?: number | { arg: number, property: string }
-  /** Where the namespace comes from: an argument of the factory (`useTranslation('ns')`) or an option. */
+  /** Where the namespace comes from: an argument of the factory (`useTranslation('ns')`), an option (`{ ns }`), or a `keyPrefix` option. */
   readonly namespace?: NamespaceSource
-  /** The callee is a factory whose return value is the translate function, for example `useI18n()` returning `{ t }`. */
+  /** The callee is a factory that returns the translate function, for example `useI18n()` returning `{ t }`. */
   readonly factory?: boolean
+  /** Type names that mark a parameter or prop as a translate function: ['TFunction']. */
+  readonly types?: readonly string[]
 }
 ```
-
-  Alias tracking means `const { t: translate } = useI18n()` or `import { t as tr } from 'i18next'` are found, which regexes cannot do. Template literals with a static prefix give `dynamic: 'prefix'` usages, which checks treat as "keys under this prefix are used".
-- **`vue`**: splits SFCs with `@vue/compiler-sfc`, runs `js` on `<script>`, and walks the template AST for `$t()`, `t()`, `v-t`, `<i18n-t keypath>` and `<i18n path>`.
-- **`svelte`**, **`html`**, **`jsx-attr`** (for `<Trans i18nKey>`): same idea for their syntaxes.
 
 ### Extractor
 
@@ -240,10 +268,11 @@ config:
 scanners:
   calls: # configures the built-in `js` scanner
     - callee: [t, translate]
-      from: [{module: '@acme/i18n'}]
     - callee: useT
       factory: true
       namespace: {arg: 0}
+    - callee: tr
+      types: [AcmeTranslate] # params typed `AcmeTranslate` count, whatever their name
   regex: # configures the built-in `regex` scanner
     - extensions: [html]
       patterns: ['data-i18n="({key})"']
@@ -265,7 +294,19 @@ Rules:
 
 - The YAML schema is generated from the same valibot schemas that validate it at load time, so the editor schema and the runtime check never drift ([04-config.md](./04-config.md)).
 - Each YAML section maps to a typed TS factory in `@x18n/builtins` (for example `scanners.calls` maps to options of the `js` scanner). A YAML plugin compiles to a normal `Plugin` object. This makes "YAML first, move to TS later" a small change, and `x18n plugin eject <file>` can print the TS equivalent.
-- YAML plugins cannot contain code. Anything that needs code (a new format, a custom check) is a TS plugin.
+- YAML plugins hold data only. The full subset is:
+  - `detect` (dependencies)
+  - `config` defaults (resources, namespace, locales)
+  - `scanners.calls` and `scanners.regex`
+  - `scopes`
+  - `derivedKeys`
+  - `normalizeKey` replace rules
+  - `placeholders`
+  - `localeInfo` as a static map (code to flag, display name)
+  - `extract` templates
+  - `typegen` target (1.x)
+
+  Anything that needs logic (a new format, a custom check, a reporter) is a TS plugin. YAML plugins never embed code.
 
 ## TS plugins
 

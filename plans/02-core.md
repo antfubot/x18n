@@ -7,8 +7,18 @@ The code blocks below are design sketches. Final names can change during impleme
 ## Domain model
 
 ```ts
-/** A BCP 47 tag after normalization, for example `en`, `zh-Hant`, `pt-BR`. */
+/** The locale code exactly as written in paths and files: `en`, `zh_CN`, `pt-BR`. Never normalized. */
 type LocaleCode = string & { readonly __brand: 'LocaleCode' }
+
+/** Display data from a lenient parse of a code. Never changes the code itself. */
+interface LocaleInfo {
+  readonly code: LocaleCode
+  readonly language: string | undefined // 'zh'
+  readonly region: string | undefined // 'CN'
+  readonly displayName: string | undefined // 'Chinese (China)', via Intl.DisplayNames
+  readonly flag: string | undefined
+  readonly pluralCategories: readonly Intl.LDMLPluralRule[] // used by prompts and typegen
+}
 
 /** Canonical key: optional namespace plus path segments. Segments may contain dots when the key style is flat. */
 interface KeyId {
@@ -27,8 +37,8 @@ interface Message {
   readonly locale: LocaleCode
   readonly value: MessageLeaf
   readonly resource: ResourceId
-  /** Byte range of the value in the resource text, when the format can report it. */
-  readonly range: TextRange | undefined
+  /** Ranges of the key and the value in the resource text, when the format can report them. */
+  readonly range: { key: TextRange, value: TextRange } | undefined
 }
 
 /** One file (or one block inside a file) that holds messages for one locale and one namespace. */
@@ -39,16 +49,21 @@ interface Resource {
   readonly namespace: string | undefined
   readonly format: string // format id, for example 'json'
   readonly block: ResourceBlock | undefined // set for embedded resources such as a Vue <i18n> block
+  /** True for read-only formats and for resources loaded with `execute: true`. */
   readonly readonly: boolean
 }
 
 interface Usage {
-  readonly key: KeyString | undefined // undefined when the key is dynamic and could not be resolved
+  readonly key: KeyString | undefined // undefined when the key is fully dynamic
   readonly raw: string // the key text as written in code
   readonly path: string
+  /** Range of the key text only (inside the quotes), the range rename rewrites. */
   readonly range: TextRange
   readonly scanner: string // scanner id
-  readonly dynamic: false | 'prefix' | 'unknown' // `t(`pages.${id}.title`)` gives 'prefix'
+  /** How the key was found: a call argument, a selector (`$ => $.a.b`), an accessor (`m.a_b()`), a same-file constant, or a `@x18n-key` marker. */
+  readonly kind: 'call' | 'selector' | 'accessor' | 'constant' | 'marker'
+  /** `t(`pages.${id}.title`)` gives 'prefix' with key `pages`. Prefix usages are "possible" references of every key under the prefix. */
+  readonly dynamic: false | 'prefix' | 'unknown'
   readonly locale: LocaleCode | undefined // when the call pins a locale
 }
 
@@ -58,7 +73,7 @@ interface TextRange { readonly start: number, readonly end: number } // UTF-16 o
 Rules:
 
 - Keys are compared by `KeyString` only. Plugins turn raw text into keys with `normalizeKey` hooks, never by string tricks in surfaces.
-- Locale codes are normalized once at discovery, through the locale tag system of the config (`bcp47` default, `legacy`, `none`, ported from i18n-ally `tagSystems/`).
+- Locale codes are used exactly as found. `zh_CN` and `zh-CN` are two locales; the `locale-code-conflict` check warns about such near-duplicates. Display data comes from `localeInfo(code)`: a lenient built-in parse, which plugins can replace for odd schemes.
 - Offsets are UTF-16 code units, the same as JS strings. The LSP converts to line and character.
 - Messages keep non-string leaves as found, so a write does not turn `3` into `"3"`.
 
@@ -102,7 +117,8 @@ project.resources // Resource[]
 project.keys() // KeyString[]; filters by namespace, prefix, glob
 project.get(key) // KeyInfo: messages per locale, usages, diagnostics, review threads
 project.message(key, locale)
-project.usages({ key, path }) // both filters optional
+project.usages({ key, path }) // both filters optional; with `key`, prefix usages come back marked `possible`
+project.keyAt(path, offset) // the key (or resource node) under a position: the base of definition, references and rename
 project.analyze() // Analysis: diagnostics, coverage per locale, unused, missing
 project.events.on('change', (change: ProjectChange) => {})
 project.dispose()
@@ -123,7 +139,7 @@ Incremental rules:
 
 - Each index entry stores a content hash. A parse or scan is skipped when the hash matches, which also makes the persistent cache work across runs.
 - Analysis is lazy and memoized per revision. `project.revision` goes up on every change.
-- Scanning SHOULD be able to run in parallel. Core exposes `scanFile(path, text)` as a pure function of config and text, so the Node host can spread it over worker threads in M13 without changing core.
+- Scanning SHOULD be able to run in parallel. Core exposes `scanFile(path, text)` as a pure function of config and text, so the Node host can spread it over worker threads in M11 without changing core.
 
 ### `project.explain()`
 
@@ -136,7 +152,8 @@ Every write goes through one planner, so the CLI, LSP, UI and agents get the sam
 ```ts
 const plan = project.plan([
   { type: 'set', key, locale, value },
-  { type: 'rename', from, to, updateUsages: true },
+  { type: 'rename', from, to }, // one key; may change namespace and nesting
+  { type: 'rename-prefix', from, to }, // every key under `from.`, used for parent nodes and `x18n rename pages screens`
   { type: 'delete', key, locales: 'all' },
   { type: 'extract', items }, // see 11-extraction.md
 ])
@@ -160,7 +177,15 @@ Rules:
 
 - Planning has no side effects. `plan` can run as a dry run, and the LSP turns `changes` into a `WorkspaceEdit` without writing anything.
 - Formats SHOULD edit in place (keep comments, order, quotes and indentation). A format that can only serialize returns a full-file edit. The plan marks this in `warnings` so a surface can tell the user that formatting was reset.
-- New keys go into a resource picked by the target strategy of the config (`same-namespace`, `closest-path`, `most-similar-keys`, `ask`). With `ask`, the plan returns a decision and the surface asks. CLI flags and agent input can answer upfront.
+- New keys go into (1) the resource of the key's namespace, else (2) the resource that holds the most keys sharing the longest prefix with the new key, else (3) the first resource of the locale. Only a tie returns a decision; CLI flags and agent input can answer upfront. New keys follow the nesting style of the target file.
+- Rename rules:
+  - The result is the same whether the rename starts from a usage or from a key in any locale's resource.
+  - One plan covers every locale, every usage, the static part of dynamic prefix usages, and review threads.
+  - A rename may change nesting (`a.b` to `c.d.e`). Parent objects left empty are removed.
+  - A rename that changes the namespace (`common:save` to `actions:save`) moves entries between resources in every locale. It creates missing target resources through the finder's `resolveNew`. It updates scoped usages (`useTranslation('common')`) only when no other key in the same scope would change; otherwise it warns.
+  - A rename is refused, listing the conflicting files, when the target key already exists in any locale.
+  - Renaming a key covered by a dynamic prefix usage goes ahead with a warning that lists the usages it cannot update.
+- Writes to read-only resources (read-only formats, `execute: true` resources) fail with a coded error naming the resource.
 - A plan is checked against the current revision. If files changed between plan and apply, apply fails with a coded error and the caller plans again.
 - `keepFilled` (i18n-ally `keepFulfilled`) is a config switch. When it is on, `set` in one locale also adds the key with an empty value to the other locales.
 
@@ -178,7 +203,9 @@ interface Diagnostic {
 }
 ```
 
-Checks are plugins ([03-plugins.md](./03-plugins.md)), so core holds only the runner, severities and suppression. Suppression works by config (`checks: { 'unused-key': 'off' }`), by key glob (`keysInUse`, `ignoreKeys`), and by inline comment in source files (`// x18n-ignore-next-line`, handled by scanners).
+Checks are plugins ([03-plugins.md](./03-plugins.md)), so core holds only the runner, severities, the `recommended` defaults, `strict` mode (warnings become errors) and suppression. Suppression works by config (`checks: { 'unused-key': 'off' }`), by key glob (`keysInUse`, `ignoreKeys`), and by inline comments in source files (`// x18n-disable-next-line`, `/* x18n-disable */`), handled by scanners.
+
+`x18n check`, the LSP and the UI all read diagnostics from `project.analyze()` with the same config. The editor shows exactly what `x18n check` reports, the same way TS shows the errors `tsc` reports.
 
 ## Translation prompt builder
 
