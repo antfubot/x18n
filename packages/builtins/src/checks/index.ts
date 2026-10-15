@@ -1,5 +1,6 @@
 import type { Check, DiagnosticInput, GlossaryEntry, KeyString, Plugin } from '@x18n/core'
 import { localeSpellingKey } from '@x18n/core'
+import { shouldExtract } from '../extractors'
 
 function list(items: readonly string[]): string {
   return items.join(', ')
@@ -243,8 +244,10 @@ export const hardString: Check = {
   * run(ctx) {
     if (!ctx.config.extract.autoDetect && ctx.config.checks['hard-string'] === undefined)
       return
-    for (const hard of ctx.hardStrings())
-      yield { location: { path: hard.path, range: hard.range }, message: `Hard-coded string "${hard.text}".` }
+    for (const hard of ctx.hardStrings()) {
+      if (shouldExtract(hard.text, hard.kind))
+        yield { location: { path: hard.path, range: hard.range }, message: `Hard-coded string "${hard.text}".` }
+    }
   },
 }
 

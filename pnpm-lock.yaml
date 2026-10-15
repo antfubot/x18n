@@ -471,6 +471,9 @@ importers:
 
   packages/lsp:
     dependencies:
+      '@x18n/builtins':
+        specifier: workspace:*
+        version: link:../builtins
       '@x18n/core':
         specifier: workspace:*
         version: link:../core

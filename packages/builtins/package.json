@@ -16,6 +16,7 @@
   "exports": {
     ".": "./dist/index.mjs",
     "./checks": "./dist/checks.mjs",
+    "./extractors": "./dist/extractors.mjs",
     "./finders": "./dist/finders.mjs",
     "./formats": "./dist/formats.mjs",
     "./manifests": "./dist/manifests.mjs",

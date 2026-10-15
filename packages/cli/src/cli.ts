@@ -5,6 +5,7 @@ import cac from 'cac'
 import { version } from '../package.json' with { type: 'json' }
 import { apply, fill, format, remove, rename, set } from './commands/change'
 import { check } from './commands/check'
+import { extract } from './commands/extract'
 import { doctor, get, keys, locales, status, usages } from './commands/look'
 import { prompt } from './commands/prompt'
 import { eject, init, schema } from './commands/setup'
@@ -106,6 +107,13 @@ export function createCli(): CAC {
   cli.command('format', 'Re-write resources with the configured sort and indent')
     .option('--dry-run', 'Print the plan instead of writing')
     .action(run('format', format))
+
+  cli.command('extract [...files]', 'Find hard-coded strings and turn them into keys')
+    .option('--list', 'Print candidates and proposed keys')
+    .option('--plan <file>', 'Write the extraction plan to a file to edit')
+    .option('--apply <file>', 'Apply an (edited) extraction plan')
+    .option('--dry-run', 'Print the plan instead of writing')
+    .action(run('extract', extract))
 
   cli.command('prompt <kind>', 'Print a prompt for an agent or LLM: `prompt translate --to <locale>` or `prompt review --locale <locale>`')
     .option('--to <locale>', 'Target locale (translate)')

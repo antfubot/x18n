@@ -34,6 +34,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@x18n/builtins": "workspace:*",
     "@x18n/core": "workspace:*",
     "@x18n/node": "workspace:*",
     "vscode-languageserver": "catalog:deps",

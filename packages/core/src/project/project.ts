@@ -641,6 +641,10 @@ export function createProject(options: CreateProjectOptions): Project {
     },
     reporters: registry.reporters,
     placeholderSyntaxes: registry.placeholders,
+    extractTemplates: [
+      ...(config.extract.templates ?? []).map(template => typeof template === 'string' ? { template } : template),
+      ...registry.extractors.flatMap(extractor => extractor.templates),
+    ],
     keys,
     get,
     message,

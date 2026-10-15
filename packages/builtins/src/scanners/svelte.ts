@@ -17,12 +17,18 @@ function isSvelteNode(value: unknown): value is SvelteNode {
 const expressionTypes = new Set(['ExpressionTag', 'HtmlTag', 'ConstTag', 'RenderTag', 'IfBlock', 'EachBlock', 'AwaitBlock', 'KeyBlock'])
 const ignoredAttributes = new Set(['class', 'style', 'id', 'name', 'type', 'href', 'src', 'for', 'role', 'lang', 'rel', 'target'])
 
-function textHardString(node: SvelteNode, data: string, attribute: string | undefined, out: HardString[]): void {
+function textHardString(node: SvelteNode, data: string, attribute: SvelteNode & { name?: unknown } | undefined, out: HardString[]): void {
   const text = data.trim()
-  if (!text || !/\p{L}/u.test(text) || (attribute !== undefined && ignoredAttributes.has(attribute)))
+  const name = typeof attribute?.name === 'string' ? attribute.name : undefined
+  if (!text || !/\p{L}/u.test(text) || (name !== undefined && ignoredAttributes.has(name)))
     return
+  if (attribute) {
+    // The whole attribute, which templates such as `{attr}={$_('{key}')}` replace.
+    out.push({ text, range: { start: attribute.start, end: attribute.end }, kind: 'svelte-attribute', ...name ? { attribute: name } : {} })
+    return
+  }
   const start = node.start + data.indexOf(text)
-  out.push({ text, range: { start, end: start + text.length }, kind: attribute === undefined ? 'svelte-text' : 'svelte-attribute', ...attribute ? { attribute } : {} })
+  out.push({ text, range: { start, end: start + text.length }, kind: 'svelte-text' })
 }
 
 /** Svelte components: `<script>` and template expressions through the `js` scanner. Node only at first. */
@@ -49,7 +55,7 @@ export function svelte(): Plugin {
         }
         catch {}
       }
-      const visit = (node: unknown, parentType: string, attribute: string | undefined): void => {
+      const visit = (node: unknown, parentType: string, attribute: SvelteNode | undefined): void => {
         if (Array.isArray(node)) {
           node.forEach(child => visit(child, parentType, attribute))
           return
@@ -69,11 +75,11 @@ export function svelte(): Plugin {
         if (expressionTypes.has(node.type) && 'expression' in node && isSvelteNode(node.expression))
           scan(file.text.slice(node.expression.start, node.expression.end), node.expression.start, true)
         if (node.type === 'Text' && 'data' in node && typeof node.data === 'string')
-          textHardString(node, node.data, parentType === 'Attribute' ? attribute ?? '' : undefined, hardStrings)
-        const name = node.type === 'Attribute' && 'name' in node && typeof node.name === 'string' ? node.name : attribute
+          textHardString(node, node.data, parentType === 'Attribute' ? attribute : undefined, hardStrings)
+        const owner = node.type === 'Attribute' ? node : attribute
         for (const [key, child] of Object.entries(node)) {
           if (key !== 'expression' && typeof child === 'object')
-            visit(child, node.type, name)
+            visit(child, node.type, owner)
         }
       }
       visit(ast, '', undefined)

@@ -415,8 +415,9 @@ class FileScan {
       return
     if (parent.type === 'JSXAttribute') {
       const name = parent.name.type === 'JSXIdentifier' ? parent.name.name : ''
+      // The range covers the whole attribute, which templates such as `{attr}={t('{key}')}` replace.
       if (isStringLiteral(node) && !hardStringIgnoredAttributes.has(name) && !name.startsWith('data-') && !name.startsWith('aria-'))
-        this.hard(node.value, { start: node.start, end: node.end }, 'jsx-attribute', name)
+        this.hard(node.value, { start: parent.start, end: parent.end }, 'jsx-attribute', name)
       return
     }
     const ignoredParent = parent.type === 'ImportDeclaration' || parent.type === 'ExportNamedDeclaration' || parent.type === 'ExportAllDeclaration'
@@ -429,10 +430,23 @@ class FileScan {
     if (isStringLiteral(node))
       this.hard(node.value, { start: node.start, end: node.end }, 'js-string')
     else if (node.type === 'TemplateLiteral')
-      this.hard(node.quasis.map((q, i) => `${q.value.cooked ?? q.value.raw}${i < node.expressions.length ? `{${i}}` : ''}`).join(''), { start: node.start, end: node.end }, 'js-template')
+      this.template(node)
   }
 
-  /** ---- Markers ---- */
+  /** `Hello ${user.name}` becomes `Hello {0}` with the argument `name: user.name`. */
+  template(node: Extract<Node, { type: 'TemplateLiteral' }>): void {
+    if (!this.collectHardStrings)
+      return
+    const args = node.expressions.map((expression, i) => {
+      const source = this.text.slice(expression.start, expression.end)
+      const name = expression.type === 'Identifier' ? expression.name : expression.type === 'MemberExpression' && expression.property.type === 'Identifier' ? expression.property.name : `arg${i}`
+      return { name, expression: source }
+    })
+    const text = node.quasis.map((q, i) => `${q.value.cooked ?? q.value.raw}${i < args.length ? `{${i}}` : ''}`).join('')
+    if (/\p{L}/u.test(text))
+      this.hardStrings.push({ text, range: this.range({ start: node.start, end: node.end }), kind: 'js-template', args })
+  }
+
   markers(program: Program, comments: readonly Comment[]): void {
     for (const comment of comments) {
       const marker = /@x18n-keys?\b/.exec(comment.value)?.[0]

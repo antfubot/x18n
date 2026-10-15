@@ -461,6 +461,7 @@ export interface Project {
   readonly namespaced: boolean;
   readonly reporters: ReadonlyMap<string, Reporter>;
   readonly placeholderSyntaxes: readonly PlaceholderSyntax[];
+  readonly extractTemplates: readonly ExtractTemplate[];
   readonly keys: (_?: KeyQuery) => KeyString[];
   readonly get: (_: KeyString) => KeyInfo | undefined;
   readonly message: (_: KeyString, _: LocaleCode) => Message | undefined;

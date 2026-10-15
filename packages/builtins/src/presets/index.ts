@@ -1,5 +1,6 @@
 // Detection and syntax adapted from i18n-ally (MIT), src/frameworks/*
 import type { CallSpec, ConfigDraft, DetectContext, ExtractTemplate, LocaleFinder, Plugin, Preset, PresetFactory, ResourceSpec } from '@x18n/core'
+import { defaultTemplates } from '../extractors'
 import { sfcBlocks } from '../finders/sfc-blocks'
 import { braces, doubleBraces, icu, linked, nesting, placeholders } from '../placeholders'
 import { nlsFinder } from './nls'
@@ -233,7 +234,7 @@ export function general(): Preset {
     detect: () => true,
     plugins: [{
       name: 'x18n:general',
-      extractors: [{ id: 'general', templates: [{ template: 't(\'{key}\'{args})' }] }],
+      extractors: [{ id: 'general', templates: defaultTemplates }],
     }],
   }
 }

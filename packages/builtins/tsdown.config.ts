@@ -4,6 +4,7 @@ export default defineConfig({
   entry: {
     'index': 'src/index.ts',
     'checks': 'src/checks/index.ts',
+    'extractors': 'src/extractors/index.ts',
     'finders': 'src/finders/index.ts',
     'formats': 'src/formats/index.ts',
     'manifests': 'src/manifests/index.ts',

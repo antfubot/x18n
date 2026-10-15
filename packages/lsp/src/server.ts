@@ -1,3 +1,4 @@
+import type { ExtractCandidate } from '@x18n/builtins/extractors'
 import type { EditOp, FileChange, KeyString, OverlayHost, Plan, Project, ResourceNode, TextRange, Diagnostic as X18nDiagnostic } from '@x18n/core'
 import type { NodeHost } from '@x18n/node'
 import type {
@@ -20,6 +21,7 @@ import type {
 import type * as P from './protocol'
 import { relative, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { extractItems, findCandidates } from '@x18n/builtins/extractors'
 import { createLineIndex, createOverlayHost, isX18nError } from '@x18n/core'
 import { loadWorkspace } from '@x18n/node'
 import {
@@ -193,7 +195,7 @@ class Server {
         hoverProvider: true,
         inlayHintProvider: true,
         completionProvider: { triggerCharacters: ['.', '\'', '"', '`', ':'] },
-        codeActionProvider: { codeActionKinds: [CodeActionKind.QuickFix] },
+        codeActionProvider: { codeActionKinds: [CodeActionKind.QuickFix, CodeActionKind.RefactorExtract] },
         documentSymbolProvider: true,
         workspaceSymbolProvider: true,
         codeLensProvider: { resolveProvider: false },
@@ -460,6 +462,45 @@ class Server {
         catch {}
       }
     }
+    return [...actions, ...this.extractActions(entry, path, start, end)]
+  }
+
+  extractActions(entry: ServerProject, path: string, start: number, end: number): CodeAction[] {
+    const { project } = entry
+    if (project.nodes(path).length > 0)
+      return []
+    const candidates = findCandidates(project, { files: [path] })
+    const inRange = candidates.filter(c => c.range.start <= end && c.range.end >= start)
+    const actions: CodeAction[] = []
+    const edit = (list: readonly ExtractCandidate[]): WorkspaceEdit | undefined => {
+      try {
+        return this.workspaceEdit(entry, project.plan([{ type: 'extract', items: extractItems(project, list) }]))
+      }
+      catch {
+        return undefined
+      }
+    }
+    const text = this.text(entry, path)
+    const index = createLineIndex(text)
+    for (const candidate of inRange) {
+      const extracted = edit([candidate])
+      if (extracted)
+        actions.push({ title: `Extract "${truncate(candidate.text, 30)}" to ${candidate.key}`, kind: CodeActionKind.RefactorExtract, edit: extracted })
+      const line = index.position(candidate.range.start).line
+      const indent = /^\s*/.exec(index.line(line))?.[0] ?? ''
+      const markup = /-(?:text|attribute)$/.test(candidate.kind) && !candidate.kind.startsWith('js')
+      const comment = markup ? '<!-- x18n-ignore -->' : '// x18n-ignore'
+      actions.push({
+        title: `Ignore "${truncate(candidate.text, 30)}"`,
+        kind: CodeActionKind.QuickFix,
+        edit: { changes: { [this.uriOf(entry, path)]: [{ range: { start: { line, character: 0 }, end: { line, character: 0 } }, newText: `${indent}${comment}\n` }] } },
+      })
+    }
+    if (inRange.length > 0 && candidates.length > 1) {
+      const all = edit(candidates)
+      if (all)
+        actions.push({ title: `Extract all ${candidates.length} hard strings in this file`, kind: CodeActionKind.RefactorExtract, edit: all })
+    }
     return actions
   }
 
@@ -532,7 +573,9 @@ class Server {
     const arg: unknown = params.arguments?.[0]
     if (typeof arg !== 'object' || arg === null)
       return null
-    const input = arg as { project?: string, key?: string, locale?: string, value?: string, to?: string } // client-supplied; fields checked below
+    const input = arg as { project?: string, key?: string, locale?: string, value?: string, to?: string, uri?: string } // client-supplied; fields checked below
+    if (params.command === commands.extract && typeof input.uri === 'string')
+      return this.extractFile(input.uri)
     const entry = this.projects.find(p => p.name === input.project) ?? this.projects[0]
     if (!entry || typeof input.key !== 'string')
       return null
@@ -547,6 +590,19 @@ class Server {
     if (!op)
       return null
     const edit = this.workspaceEdit(entry, this.plan(entry.project, [op]))
+    await this.connection.workspace.applyEdit(edit)
+    return edit
+  }
+
+  async extractFile(uri: string): Promise<WorkspaceEdit | null> {
+    const found = this.locate(uri)
+    if (!found)
+      return null
+    const { entry, path } = found
+    const candidates = findCandidates(entry.project, { files: [path] })
+    if (candidates.length === 0)
+      return null
+    const edit = this.workspaceEdit(entry, this.plan(entry.project, [{ type: 'extract', items: extractItems(entry.project, candidates) }]))
     await this.connection.workspace.applyEdit(edit)
     return edit
   }

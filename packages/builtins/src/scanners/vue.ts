@@ -74,7 +74,7 @@ class TemplateScan {
         this.out.keySlots.push(range)
       }
       else if (!ignoredAttributes.has(prop.name) && !prop.name.startsWith('data-') && /\p{L}/u.test(value.content)) {
-        this.out.hardStrings.push({ text: value.content, range: { start: value.loc.start.offset, end: value.loc.end.offset }, kind: 'vue-attribute', attribute: prop.name })
+        this.out.hardStrings.push({ text: value.content, range: { start: prop.loc.start.offset, end: prop.loc.end.offset }, kind: 'vue-attribute', attribute: prop.name })
       }
       return
     }

@@ -189,6 +189,13 @@
       "skillPath": "skills/productivity/writing-for-agents/SKILL.md",
       "computedHash": "95da47fc97af998e85b7d7e6d57b3ac76727c1e290cfe9ea09005aacb826959f",
       "via": "@antfu/skills"
+    },
+    "x18n": {
+      "source": "x18n",
+      "sourceType": "node_modules",
+      "skillPath": "skills/x18n/SKILL.md",
+      "version": "0.0.0",
+      "computedHash": "4d95cd9a0ef1584f90dc656eae412fcbb88cd39b5b091a0954ee072f6850fa2c"
     }
   }
 }

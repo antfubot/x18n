@@ -2,7 +2,7 @@ import type { ErrorInfo } from '../errors'
 import type { CapabilityConflict } from '../plugins'
 import type { PromptData, PromptOptions } from '../project/prompt'
 import type { PresetExplanation } from '../resolve'
-import type { ResolvedConfig } from './config'
+import type { ExtractTemplate, ResolvedConfig } from './config'
 import type { FileEvent } from './host'
 import type {
   Diagnostic,
@@ -154,6 +154,8 @@ export interface Project {
   readonly namespaced: boolean
   readonly reporters: ReadonlyMap<string, Reporter>
   readonly placeholderSyntaxes: readonly PlaceholderSyntax[]
+  /** Extraction templates: config `extract.templates` first, then those of presets. */
+  readonly extractTemplates: readonly ExtractTemplate[]
   readonly keys: (query?: KeyQuery) => KeyString[]
   readonly get: (key: KeyString) => KeyInfo | undefined
   readonly message: (key: KeyString, locale: LocaleCode) => Message | undefined
