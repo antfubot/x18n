@@ -249,7 +249,9 @@ async function expandPresets(presets: readonly Preset[], userPlugins: readonly L
   const plugins: Plugin[] = []
   const flatten = async (item: Loaded, force: boolean): Promise<boolean> => {
     if (!isPreset(item)) {
-      plugins.push(item)
+      // Presets often share plugins (nuxt-i18n includes vue-i18n); names are unique, so the first one stays.
+      if (!plugins.some(plugin => plugin.name === item.name))
+        plugins.push(item)
       return false
     }
     const applies = force || (item.detect ? await item.detect(detectCtx) : false)

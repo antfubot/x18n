@@ -250,6 +250,8 @@ export interface PlaceholderSyntax {
   readonly validate?: ((value: string) => readonly string[]) | undefined
   /** Text used in prompts, for example `{name}`. */
   readonly example?: string | undefined
+  /** The placeholder name is another key (vue-i18n `@:key`, i18next `$t(key)`), which then counts as used. */
+  readonly reference?: boolean | undefined
 }
 
 export interface KeyContext {

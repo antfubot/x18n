@@ -1,5 +1,6 @@
 // Detection and syntax adapted from i18n-ally (MIT), src/frameworks/*
 import type { CallSpec, ConfigDraft, DetectContext, ExtractTemplate, LocaleFinder, Plugin, Preset, PresetFactory, ResourceSpec } from '@x18n/core'
+import { sfcBlocks } from '../finders/sfc-blocks'
 import { braces, doubleBraces, icu, linked, nesting, placeholders } from '../placeholders'
 import { nlsFinder } from './nls'
 
@@ -63,6 +64,7 @@ export function vueI18n(): Preset {
         ],
       }),
       placeholders(braces, linked),
+      sfcBlocks(),
     ],
   }
 }
@@ -73,7 +75,7 @@ export function nuxtI18n(): Preset {
     detect: dependsOn(['@nuxtjs/i18n', 'nuxt-i18n']),
     exclusive: false,
     plugins: [
-      vueI18n(),
+      ...vueI18n().plugins,
       {
         name: 'x18n:nuxt-i18n',
         async config(draft, ctx) {

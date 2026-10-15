@@ -95,6 +95,8 @@ catalogs:
     vite: ^8.3.1
   deps:
     '@valibot/to-json-schema': ^1.8.0
+    '@vue/compiler-core': ^3.5.44
+    '@vue/compiler-sfc': ^3.5.44
     cac: ^7.1.0
     chokidar: ^5.0.0
     devframe: ^1.2.5
@@ -102,6 +104,8 @@ catalogs:
     jiti: ^2.6.1
     json5: ^2.2.3
     jsonc-parser: ^3.3.1
+    oxc-parser: ^0.154.0
+    svelte: ^5.57.2
     tinyglobby: ^0.2.17
     valibot: ^1.5.0
     vscode-languageserver: ^10.1.2

@@ -292,15 +292,15 @@ class PlanBuilder {
   rawFor(usage: Usage, next: KeyString): string | undefined {
     const { namespace, path } = this.keyId(next)
     let rest = path.join('.')
-    if (usage.scopePrefix) {
+    const separator = this.config.namespace.separator
+    const explicit = this.state.namespaced && usage.raw.indexOf(separator) > 0
+    if (usage.scopePrefix && !explicit) {
       if (!rest.startsWith(`${usage.scopePrefix}.`))
         return undefined
       rest = rest.slice(usage.scopePrefix.length + 1)
     }
     if (!this.state.namespaced)
       return rest
-    const separator = this.config.namespace.separator
-    const explicit = usage.raw.indexOf(separator) > 0
     if (explicit || namespace !== (usage.scopeNamespace ?? this.config.namespace.default))
       return `${namespace}${separator}${rest}`
     return rest

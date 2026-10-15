@@ -28,9 +28,9 @@ export const percentBraces: PlaceholderSyntax = byRegex('percent-braces', /%\{(\
 /** `%s`, `%d`, `%1$s`: printf. */
 export const printf: PlaceholderSyntax = byRegex('printf', /%(?:(\d+)\$)?[-+ 0#]*(?:[1-9]\d*)?(?:\.\d+)?[sdifoxXeEgGc@]/g, '%s')
 /** `@:key` and `@.modifier:key`: vue-i18n linked messages. */
-export const linked: PlaceholderSyntax = byRegex('linked', /@(?:\.\w+)?:\(?([\w.-]+)\)?/g, '@:key')
+export const linked: PlaceholderSyntax = { ...byRegex('linked', /@(?:\.\w+)?:\(?([\w.-]+)\)?/g, '@:key'), reference: true }
 /** `$t(key)` nesting in i18next. */
-export const nesting: PlaceholderSyntax = byRegex('nesting', /\$t\(([\w.:-]+)(?:,[^)]*)?\)/g, '$t(key)')
+export const nesting: PlaceholderSyntax = { ...byRegex('nesting', /\$t\(([\w.:-]+)(?:,[^)]*)?\)/g, '$t(key)'), reference: true }
 
 /** Offset after the `}` that closes the `{` at `start`, or -1. */
 function closingBrace(value: string, start: number, to: number): number {

@@ -152,9 +152,19 @@ export function createAnalyzer(options: AnalyzerOptions): { readonly analyze: ()
       || (state.derived.get(key)?.length ?? 0) > 0
       || (sourceKeys.length === 0 && messages.has(key))
 
-    const hasScanners = registry.scanners.some(scanner => scanner.extensions.length > 0)
+    // Without scanned source files every key would look unused.
+    const hasScanners = state.files.size > 0
+    const referenceSyntaxes = registry.placeholders.filter(syntax => syntax.reference)
+    const referenced = new Set<KeyString>()
+    if (referenceSyntaxes.length > 0) {
+      for (const byLocale of messages.values()) {
+        const value = byLocale.get(sourceLocale)?.[0]?.value
+        if (typeof value === 'string')
+          referenceSyntaxes.forEach(syntax => syntax.find(value).forEach(p => referenced.add(p.name)))
+      }
+    }
     const isUsed = (key: KeyString): boolean => {
-      if (state.usagesByKey.has(key) || inUse(key))
+      if (state.usagesByKey.has(key) || inUse(key) || referenced.has(key))
         return true
       const base = options.baseOf(key)
       if (base !== undefined && (state.usagesByKey.has(base) || inUse(base)))

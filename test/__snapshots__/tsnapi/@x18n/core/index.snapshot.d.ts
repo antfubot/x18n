@@ -347,6 +347,7 @@ export interface PlaceholderSyntax {
   readonly find: (_: string) => readonly Placeholder[];
   readonly validate?: ((_: string) => readonly string[]) | undefined;
   readonly example?: string | undefined;
+  readonly reference?: boolean | undefined;
 }
 export interface Plan {
   readonly id: string;

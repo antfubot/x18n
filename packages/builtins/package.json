@@ -35,9 +35,15 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@vue/compiler-sfc": "catalog:deps",
     "@x18n/core": "workspace:*",
     "json5": "catalog:deps",
     "jsonc-parser": "catalog:deps",
+    "oxc-parser": "catalog:deps",
+    "svelte": "catalog:deps",
     "yaml": "catalog:deps"
+  },
+  "devDependencies": {
+    "@vue/compiler-core": "catalog:deps"
   }
 }

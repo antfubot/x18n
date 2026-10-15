@@ -5,12 +5,12 @@ import { json, json5, jsonc, yaml } from './formats'
 import { manifests } from './manifests'
 import { presets } from './presets'
 import { reporters } from './reporters'
-import { regex } from './scanners/regex'
+import { js, regex, svelte, vue } from './scanners'
 
 /** Plugins that are always on, and the presets that `'auto'` detects. */
 export function createBuiltins(): Builtins {
   return {
-    plugins: [manifests(), json(), jsonc(), json5(), yaml(), pattern(), regex(), recommended(), reporters()],
+    plugins: [manifests(), json(), jsonc(), json5(), yaml(), pattern(), js(), vue(), svelte(), regex(), recommended(), reporters()],
     presets,
   }
 }

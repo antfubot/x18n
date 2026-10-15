@@ -38,9 +38,11 @@ export function createUsageResolver(
       const scopeNamespace = candidate.namespace ?? scope?.namespace
       const scopePrefix = candidate.keyPrefix ?? scope?.keyPrefix
       let namespace: string | undefined
+      let explicit = false
       if (namespaced) {
         const index = text.indexOf(separator)
-        if (index > 0) {
+        explicit = index > 0
+        if (explicit) {
           namespace = text.slice(0, index)
           text = text.slice(index + separator.length)
         }
@@ -48,7 +50,8 @@ export function createUsageResolver(
           namespace = scopeNamespace ?? config.namespace.default
         }
       }
-      if (scopePrefix)
+      // An explicit namespace (`t('common:save')`) leaves the scope's key prefix out.
+      if (scopePrefix && !explicit)
         text = text ? `${scopePrefix}.${text}` : scopePrefix
       let key: KeyString | undefined
       if (candidate.dynamic === 'unknown')

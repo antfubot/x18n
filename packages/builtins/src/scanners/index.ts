@@ -1,1 +1,5 @@
+export { calleeName, js, loadParser, scanSource } from './js'
+export type { ScanSourceOptions } from './js'
 export { compileUsagePattern, regex, regexScopes, scanWithRegex } from './regex'
+export { svelte } from './svelte'
+export { vue } from './vue'

@@ -226,6 +226,7 @@ export function createProject(options: CreateProjectOptions): Project {
       seen.add(id)
       return !suppressed.some(range => usage.range.start >= range.start && usage.range.end <= range.end)
     })
+    kept.sort((a, b) => a.range.start - b.range.start)
     return { usages: kept, scopes, keySlots, hardStrings }
   }
 
