@@ -230,15 +230,27 @@ catalogs:
     cac:
       specifier: ^7.1.0
       version: 7.1.0
+    chokidar:
+      specifier: ^5.0.0
+      version: 5.0.0
     devframe:
       specifier: ^1.2.5
       version: 1.2.5
+    ignore:
+      specifier: ^7.0.12
+      version: 7.0.12
+    jiti:
+      specifier: ^2.6.1
+      version: 2.7.0
     json5:
       specifier: ^2.2.3
       version: 2.2.3
     jsonc-parser:
       specifier: ^3.3.1
       version: 3.3.1
+    tinyglobby:
+      specifier: ^0.2.17
+      version: 0.2.17
     valibot:
       specifier: ^1.5.0
       version: 1.5.0
@@ -432,9 +444,27 @@ importers:
 
   packages/node:
     dependencies:
+      '@x18n/builtins':
+        specifier: workspace:*
+        version: link:../builtins
       '@x18n/core':
         specifier: workspace:*
         version: link:../core
+      chokidar:
+        specifier: catalog:deps
+        version: 5.0.0
+      ignore:
+        specifier: catalog:deps
+        version: 7.0.12
+      jiti:
+        specifier: catalog:deps
+        version: 2.7.0
+      tinyglobby:
+        specifier: catalog:deps
+        version: 0.2.17
+      yaml:
+        specifier: catalog:deps
+        version: 2.9.1
 
   packages/ui:
     dependencies:

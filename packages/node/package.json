@@ -30,6 +30,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@x18n/core": "workspace:*"
+    "@x18n/builtins": "workspace:*",
+    "@x18n/core": "workspace:*",
+    "chokidar": "catalog:deps",
+    "ignore": "catalog:deps",
+    "jiti": "catalog:deps",
+    "tinyglobby": "catalog:deps",
+    "yaml": "catalog:deps"
   }
 }

@@ -11,8 +11,20 @@
       "@x18n/core": [
         "./packages/core/src/index.ts"
       ],
+      "@x18n/builtins": [
+        "./packages/builtins/src/index.ts"
+      ],
+      "@x18n/builtins/*": [
+        "./packages/builtins/src/*/index.ts"
+      ],
+      "@x18n/node": [
+        "./packages/node/src/index.ts"
+      ],
       "@x18n/lsp": [
         "./packages/lsp/src/index.ts"
+      ],
+      "@x18n/ui": [
+        "./packages/ui/src/node/index.ts"
       ],
       "x18n": [
         "./packages/cli/src/index.ts"
