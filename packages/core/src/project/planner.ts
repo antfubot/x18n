@@ -31,6 +31,8 @@ export interface PlannerOptions {
   readonly usageMatches: (query: { key?: KeyString, prefix?: KeyString }) => UsageMatch[]
   readonly text: (path: string) => string | undefined
   readonly baseOf: (key: KeyString) => KeyString | undefined
+  /** A path for a new resource from the locale finders' `resolveNew`. */
+  readonly resolveNew: (locale: LocaleCode, namespace: string | undefined) => string | undefined
   readonly update: (events: readonly FileEvent[]) => Promise<ProjectChange | undefined>
 }
 
@@ -182,13 +184,22 @@ class PlanBuilder {
   createTarget(key: KeyString, locale: LocaleCode): Target {
     const { resources, sourceLocale, namespaced } = this.state
     const fits = (s: ResourceState): boolean => this.relativePath(key, s.resource) !== undefined
+    const namespace = namespaced ? this.keyId(key).namespace ?? this.config.namespace.default : undefined
+    const resolved = this.options.resolveNew(locale, namespace)
+    if (resolved) {
+      const format = this.options.registry.formatFor(resolved)
+      if (format?.serialize) {
+        const target: Target = { id: resolved, path: resolved, locale, namespace, format, state: undefined }
+        this.created.set(resolved, target)
+        return target
+      }
+    }
     const model = resources.find(s => s.resource.locale === sourceLocale && fits(s)) ?? resources.find(fits)
     const format = model && this.options.registry.formatById(model.resource.format)
     const path = model && mirrorPath(model.resource.path, model.resource.locale, locale)
     if (!model || !format?.serialize || model.resource.block || !path || path === model.resource.path)
       throw new X18nError('X18N4005', `${key} in ${locale}`)
-    const namespace = model.resource.namespace ?? (namespaced ? this.keyId(key).namespace : undefined)
-    const target: Target = { id: path, path, locale, namespace, format, state: undefined }
+    const target: Target = { id: path, path, locale, namespace: model.resource.namespace ?? namespace, format, state: undefined }
     this.created.set(path, target)
     return target
   }
@@ -352,12 +363,19 @@ class PlanBuilder {
       return
     const all = this.options.allKeys()
     const isLeaf = this.options.messages(op.from) !== undefined
-    const subtree = op.type === 'rename-prefix' || !isLeaf
-    const keys = subtree ? all.filter(key => isKeyUnder(key, op.from)) : [op.from]
+    const under = all.filter(key => isKeyUnder(key, op.from))
+    // Derived keys (`item_one`) move with their base key (`item`).
+    const derived = all.filter(key => this.options.baseOf(key) === op.from)
+    let keys: KeyString[]
+    if (op.type === 'rename-prefix')
+      keys = under
+    else if (isLeaf)
+      keys = [op.from, ...derived]
+    else
+      keys = under.length > 0 ? under : derived
     if (keys.length === 0)
       throw new X18nError('X18N4006', op.from)
-    const derived = subtree ? [] : all.filter(key => this.options.baseOf(key) === op.from)
-    const pairs = [...keys, ...derived].map(key => [key, replaceKeyPrefix(key, op.from, op.to)] as const)
+    const pairs = keys.map(key => [key, replaceKeyPrefix(key, op.from, op.to)] as const)
     for (const [, to] of pairs)
       this.conflictCheck(to)
     for (const [from, to] of pairs) {
@@ -365,8 +383,11 @@ class PlanBuilder {
       if (op.usages !== false)
         this.rewriteUsages(from, to)
     }
-    if (op.usages !== false)
-      this.rewritePrefixUsages(op.from, op.to)
+    if (op.usages === false)
+      return
+    if (!keys.includes(op.from))
+      this.rewriteUsages(op.from, op.to)
+    this.rewritePrefixUsages(op.from, op.to)
   }
 
   delete(op: Extract<EditOp, { type: 'delete' }>): void {

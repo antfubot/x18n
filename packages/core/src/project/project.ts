@@ -598,6 +598,15 @@ export function createProject(options: CreateProjectOptions): Project {
     usageMatches,
     text: path => fileTexts.get(path) ?? files.get(path)?.text,
     baseOf,
+    resolveNew(locale, namespace) {
+      const ctx = { host, config, extensions: [...new Set(registry.formats.flatMap(format => format.extensions))] }
+      for (const finder of registry.finders) {
+        const path = finder.resolveNew?.({ locale, namespace }, ctx)
+        if (path)
+          return path
+      }
+      return undefined
+    },
     update,
   })
 

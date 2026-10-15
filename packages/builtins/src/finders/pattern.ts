@@ -135,6 +135,22 @@ export async function guessResources(ctx: FinderContext): Promise<ResourceSpec[]
 
 export const patternFinder: LocaleFinder = {
   id: 'pattern',
+  resolveNew(target, ctx) {
+    for (const spec of ctx.config.resources) {
+      const wantsNamespace = /\{namespaces?\}/.test(spec.pattern)
+      if (wantsNamespace !== (target.namespace !== undefined) || spec.execute)
+        continue
+      const path = spec.pattern
+        .replace(/^\.\//, '')
+        .replace(/\{locale\??\}/g, target.locale)
+        .replace('{namespaces}', (target.namespace ?? '').replace(/\./g, '/'))
+        .replace('{namespace}', target.namespace ?? '')
+        .replace('{ext}', spec.format === 'yaml' ? 'yml' : spec.format ?? 'json')
+      if (!/[*?{}[\]]/.test(path))
+        return path
+    }
+    return undefined
+  },
   async find(ctx) {
     const specs = ctx.config.resources.length > 0 ? ctx.config.resources : await guessResources(ctx)
     const out: ResourceCandidate[] = []
