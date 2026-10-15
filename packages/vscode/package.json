@@ -15,32 +15,223 @@
     "directory": "packages/vscode"
   },
   "bugs": "https://github.com/antfu/x18n/issues",
+  "keywords": [
+    "i18n",
+    "l10n",
+    "translation",
+    "vue-i18n",
+    "i18next"
+  ],
   "categories": [
-    "Other"
+    "Other",
+    "Linters"
   ],
   "main": "./dist/index.cjs",
   "files": [
     "LICENSE.md",
-    "dist/*"
+    "README.md",
+    "dist/*",
+    "res/*"
   ],
   "engines": {
     "vscode": "^1.100.0"
   },
   "activationEvents": [
-    "workspaceContains:**/x18n.config.*"
+    "workspaceContains:**/x18n.config.*",
+    "workspaceContains:**/package.json"
   ],
   "contributes": {
     "commands": [
       {
+        "command": "x18n.openUi",
+        "title": "Open UI",
+        "category": "x18n",
+        "icon": "$(window)"
+      },
+      {
+        "command": "x18n.openKey",
+        "title": "Open Key in UI",
+        "category": "x18n",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "x18n.setDisplayLocale",
+        "title": "Set Display Locale",
+        "category": "x18n",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "x18n.editKey",
+        "title": "Edit Message",
+        "category": "x18n",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "x18n.renameKeyPrefix",
+        "title": "Rename Key Prefix",
+        "category": "x18n"
+      },
+      {
+        "command": "x18n.deleteKey",
+        "title": "Delete Key",
+        "category": "x18n",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "x18n.extract",
+        "title": "Extract Hard String",
+        "category": "x18n"
+      },
+      {
+        "command": "x18n.extractFile",
+        "title": "Extract All Hard Strings in File",
+        "category": "x18n"
+      },
+      {
+        "command": "x18n.copyTranslatePrompt",
+        "title": "Copy Translate Prompt",
+        "category": "x18n",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "x18n.goToNextUsage",
+        "title": "Go to Next Key Usage",
+        "category": "x18n"
+      },
+      {
+        "command": "x18n.goToPrevUsage",
+        "title": "Go to Previous Key Usage",
+        "category": "x18n"
+      },
+      {
+        "command": "x18n.toggleInPlace",
+        "title": "Toggle In-place Annotations",
+        "category": "x18n",
+        "icon": "$(eye)"
+      },
+      {
         "command": "x18n.restartServer",
         "title": "Restart Language Server",
         "category": "x18n"
+      },
+      {
+        "command": "x18n.migrateFromI18nAlly",
+        "title": "Migrate from i18n-ally",
+        "category": "x18n"
+      },
+      {
+        "command": "x18n.showOutput",
+        "title": "Show Output",
+        "category": "x18n"
       }
     ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "x18n.renameKeyPrefix",
+          "when": "false"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "x18n.openUi",
+          "when": "view =~ /^x18n\\./",
+          "group": "navigation"
+        },
+        {
+          "command": "x18n.setDisplayLocale",
+          "when": "view =~ /^x18n\\./",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "x18n.editKey",
+          "when": "viewItem == x18n.key",
+          "group": "inline"
+        },
+        {
+          "command": "x18n.openKey",
+          "when": "viewItem == x18n.key",
+          "group": "inline"
+        },
+        {
+          "command": "x18n.copyTranslatePrompt",
+          "when": "viewItem == x18n.key"
+        },
+        {
+          "command": "x18n.deleteKey",
+          "when": "viewItem == x18n.key"
+        },
+        {
+          "command": "x18n.renameKeyPrefix",
+          "when": "viewItem == x18n.prefix"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "x18n",
+          "title": "x18n",
+          "icon": "res/activitybar.svg"
+        }
+      ]
+    },
+    "views": {
+      "x18n": [
+        {
+          "id": "x18n.currentFile",
+          "name": "Current File"
+        },
+        {
+          "id": "x18n.progress",
+          "name": "Progress"
+        },
+        {
+          "id": "x18n.keys",
+          "name": "Keys"
+        },
+        {
+          "id": "x18n.usageReport",
+          "name": "Usage Report"
+        }
+      ]
+    },
     "configuration": {
       "type": "object",
       "title": "x18n",
       "properties": {
+        "x18n.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Run the x18n language server in this workspace."
+        },
+        "x18n.annotations": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show translated values next to or in place of keys in code."
+        },
+        "x18n.inPlace": {
+          "type": "boolean",
+          "default": true,
+          "description": "Replace keys in code with their display-locale value. The raw key shows on the cursor line and inside selections."
+        },
+        "x18n.annotationMaxLength": {
+          "type": "number",
+          "default": 40,
+          "description": "Longest value shown in an annotation. Longer values are truncated, and in-place mode falls back to an after-key hint."
+        },
+        "x18n.displayLocale": {
+          "type": "string",
+          "default": "",
+          "description": "Locale shown in annotations. Empty means the source locale."
+        },
+        "x18n.codeLens": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show usage counts and missing locales above keys in resource files."
+        },
         "x18n.trace.server": {
           "type": "string",
           "enum": [
@@ -52,18 +243,43 @@
           "description": "Trace the communication between VS Code and the x18n language server."
         }
       }
-    }
+    },
+    "jsonValidation": [
+      {
+        "fileMatch": "x18n.config.json",
+        "url": "https://x18n.antfu.dev/schema/config.json"
+      }
+    ],
+    "yamlValidation": [
+      {
+        "fileMatch": [
+          "x18n.config.yml",
+          "x18n.config.yaml"
+        ],
+        "url": "https://x18n.antfu.dev/schema/config.json"
+      },
+      {
+        "fileMatch": [
+          "*.x18n-plugin.yml",
+          "*.x18n-plugin.yaml"
+        ],
+        "url": "https://x18n.antfu.dev/schema/plugin.json"
+      }
+    ]
   },
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch --sourcemap",
     "codegen": "vscode-ext-gen --scope x18n --output src/generated/meta.ts",
     "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:e2e": "pnpm run build && tsx test/e2e/run.ts",
     "ext:package": "pnpm run build && tsx scripts/stage.ts && cd .vsce && vsce package --no-dependencies -o ../x18n.vsix",
     "ext:publish": "pnpm run ext:package && vsce publish --packagePath x18n.vsix && ovsx publish x18n.vsix"
   },
   "devDependencies": {
     "@types/vscode": "catalog:types",
+    "@vscode/test-electron": "catalog:vscode",
     "@vscode/vsce": "catalog:vscode",
     "@x18n/lsp": "workspace:*",
     "ovsx": "catalog:vscode",

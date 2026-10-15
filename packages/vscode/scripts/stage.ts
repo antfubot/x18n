@@ -11,5 +11,5 @@ const staged = { ...manifest, name: 'x18n', scripts: undefined, devDependencies:
 await rm(out, { recursive: true, force: true })
 await mkdir(out)
 await writeFile(new URL('package.json', out), `${JSON.stringify(staged, null, 2)}\n`)
-for (const file of ['README.md', 'LICENSE.md', 'dist'])
+for (const file of ['README.md', 'LICENSE.md', 'dist', 'res'])
   await cp(new URL(file, root), new URL(file, out), { recursive: true })

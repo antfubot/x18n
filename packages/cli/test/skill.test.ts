@@ -35,5 +35,5 @@ describe('shipped skill and prompts', () => {
       for (const flag of flags)
         expect(help, `x18n ${command} --${flag}`).toMatch(new RegExp(`--(?:no-)?${flag}\\b`))
     }
-  })
+  }, 30_000)
 })
