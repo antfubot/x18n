@@ -1,0 +1,96 @@
+import { describe, expect, it } from 'vitest'
+import { createTestProject, json } from './_utils'
+
+describe('project read path', () => {
+  it('reads nested JSON per locale and reports coverage', async () => {
+    const { project } = await createTestProject({
+      'src/locales/en.json': json({ home: { title: 'Home', subtitle: 'Welcome {name}' }, empty: 'x' }),
+      'src/locales/de.json': json({ home: { title: 'Startseite', subtitle: 'Willkommen' }, empty: '' }),
+      'src/locales/fr.json': json({ home: { title: 'Accueil' } }),
+    }, { resources: [{ pattern: 'src/locales/{locale}.json' }] })
+
+    expect(project.locales).toEqual(['en', 'de', 'fr'])
+    expect(project.keys()).toEqual(['empty', 'home.subtitle', 'home.title'])
+    expect(project.message('home.title', 'de')?.value).toBe('Startseite')
+    const analysis = project.analyze()
+    expect(analysis.coverage.map(c => [c.locale, c.translated, c.missing, c.empty])).toEqual([
+      ['en', 3, [], []],
+      ['de', 2, [], ['empty']],
+      ['fr', 1, ['empty', 'home.subtitle'], []],
+    ])
+    expect(analysis.diagnostics.map(d => `${d.code}:${d.key}:${d.location?.path}`)).toEqual([
+      'empty-translation:empty:src/locales/de.json',
+      'missing-translation:home.subtitle:src/locales/en.json',
+      'missing-translation:empty:src/locales/en.json',
+    ])
+    const missing = analysis.diagnostics.find(d => d.key === 'home.subtitle')!
+    expect(missing.message).toBe('"home.subtitle" is missing in fr.')
+    const text = project.text('src/locales/en.json')!
+    expect(text.slice(missing.location!.range.start, missing.location!.range.end)).toBe('subtitle')
+  })
+
+  it('reads namespaces from paths', async () => {
+    const { project } = await createTestProject({
+      'locales/en/common.json': json({ save: 'Save' }),
+      'locales/en/auth.json': json({ login: { title: 'Log in' } }),
+      'locales/de/common.json': json({ save: 'Speichern' }),
+    }, { resources: [{ pattern: 'locales/{locale}/{namespace}.json' }], namespace: { separator: ':' } })
+    expect(project.namespaced).toBe(true)
+    expect(project.keys()).toEqual(['auth:login.title', 'common:save'])
+    expect(project.get('auth:login.title')?.missing).toEqual(['de'])
+    expect(project.parseKey('common:save')).toBe('common:save')
+  })
+
+  it('merges path namespaces into keys with the default separator', async () => {
+    const { project } = await createTestProject({
+      'locales/en/pages/home.yml': 'title: Home # comment\nnested:\n  deep: "Deep"\n',
+    }, { resources: [{ pattern: 'locales/{locale}/{namespaces}.{ext}' }] })
+    expect(project.keys()).toEqual(['pages.home.nested.deep', 'pages.home.title'])
+    const message = project.message('pages.home.nested.deep', 'en')!
+    const text = project.text('locales/en/pages/home.yml')!
+    expect(text.slice(message.range!.key.start, message.range!.key.end)).toBe('deep')
+  })
+
+  it('guesses resources without config and keeps locale codes as found', async () => {
+    const { project } = await createTestProject({
+      'i18n/en.json': json({ a: 'A' }),
+      'i18n/zh_CN.json': json({ a: 'A' }),
+      'i18n/zh-CN.json': json({ a: 'A' }),
+      'other/readme.json': json({ a: 'A' }),
+    })
+    expect(project.locales).toEqual(['en', 'zh-CN', 'zh_CN'])
+    expect(project.analyze().diagnostics.map(d => d.code)).toContain('locale-code-conflict')
+    expect(project.localeInfo('zh_CN')).toMatchObject({ language: 'zh', region: 'CN', displayName: 'Chinese (China)', flag: '🇨🇳' })
+  })
+
+  it('reports leaf and parent conflicts and parse errors', async () => {
+    const { project } = await createTestProject({
+      'locales/en.json': json({ 'a': 'x', 'a.b': 'y' }),
+      'locales/de.json': '{ "a": ',
+    }, { resources: [{ pattern: 'locales/{locale}.json' }] })
+    const codes = project.analyze().diagnostics.map(d => d.code)
+    expect(codes).toContain('key-conflict')
+    expect(codes).toContain('invalid-resource')
+  })
+
+  it('honours check overrides, strict mode and ignoreKeys', async () => {
+    const files = {
+      'locales/en.json': json({ a: 'A', b: 'B', skip: { me: 'x' } }),
+      'locales/de.json': json({}),
+    }
+    const { project } = await createTestProject(files, {
+      resources: [{ pattern: 'locales/{locale}.json' }],
+      strict: true,
+      ignoreKeys: ['skip.**'],
+      checks: { 'empty-translation': 'off' },
+    })
+    expect(project.analyze().diagnostics.map(d => `${d.severity}:${d.key}`)).toEqual(['error:a', 'error:b'])
+  })
+
+  it('explains how the project was understood', async () => {
+    const { project } = await createTestProject({ 'locales/en.json': json({ a: 'A' }) })
+    const explanation = project.explain()
+    expect(explanation.finders).toEqual([{ id: 'pattern', resources: ['locales/en.json'] }])
+    expect(explanation.formats.find(f => f.id === 'json')?.resources).toBe(1)
+  })
+})

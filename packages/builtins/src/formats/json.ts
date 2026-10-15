@@ -1,23 +1,74 @@
-import type { Format, MessageTree, Plugin } from '@x18n/core'
-import { definePlugin, isMessageTree } from '@x18n/core'
+import type { Format, MessageTree, NodeRange, Plugin } from '@x18n/core'
+import type { Node, ParseError } from 'jsonc-parser'
+import { diffText, pathId, X18nError } from '@x18n/core'
+import { applyEdits, modify, parseTree, printParseErrorCode } from 'jsonc-parser'
+import { detectEol, detectIndent } from './shared'
+
+interface MutableTree { [segment: string]: MutableTree | string | number | boolean | null }
+
+function readTree(node: Node, path: string[], ranges: Map<string, NodeRange>): MessageTree {
+  const out: MutableTree = {}
+  for (const property of node.children ?? []) {
+    const [keyNode, valueNode] = property.children ?? []
+    if (!keyNode || !valueNode || typeof keyNode.value !== 'string')
+      continue
+    const key = keyNode.value
+    const childPath = [...path, key]
+    ranges.set(pathId(childPath), {
+      key: { start: keyNode.offset + 1, end: keyNode.offset + keyNode.length - 1 },
+      value: { start: valueNode.offset, end: valueNode.offset + valueNode.length },
+    })
+    if (valueNode.type === 'object')
+      out[key] = readTree(valueNode, childPath, ranges) as MutableTree
+    else if (valueNode.type === 'string' || valueNode.type === 'number' || valueNode.type === 'boolean' || valueNode.type === 'null')
+      out[key] = valueNode.value as string | number | boolean | null // jsonc-parser types `value` loosely; `type` fixes it
+  }
+  return out
+}
+
+function createJsonFormat(id: string, extensions: readonly string[], allowComments: boolean, defaultIndent: number | undefined): Format {
+  return {
+    id,
+    extensions,
+    parse(text, ctx) {
+      const errors: ParseError[] = []
+      const root = parseTree(text, errors, { allowTrailingComma: true, disallowComments: !allowComments })
+      if (errors.length > 0) {
+        const first = errors[0]!
+        throw new X18nError('X18N2002', `${ctx.path}: ${printParseErrorCode(first.error)} at offset ${first.offset}`)
+      }
+      if (!root || root.type !== 'object') {
+        if (text.trim() === '')
+          return { tree: {}, ranges: new Map() }
+        throw new X18nError('X18N2003', ctx.path)
+      }
+      const ranges = new Map<string, NodeRange>()
+      return { tree: readTree(root, [], ranges), ranges }
+    },
+    edit(text, ops, ctx) {
+      const indent = detectIndent(text, ctx.indent ?? defaultIndent)
+      const formattingOptions = { ...indent, eol: detectEol(text) }
+      let next = text.trim() === '' ? '{}\n' : text
+      for (const op of ops)
+        next = applyEdits(next, modify(next, [...op.path], op.type === 'set' ? op.value : undefined, { formattingOptions }))
+      return diffText(text, next)
+    },
+    serialize(tree, ctx) {
+      const indent = ctx.indent ?? defaultIndent ?? 2
+      return `${JSON.stringify(tree, null, indent === 'tab' ? '\t' : indent)}\n`
+    },
+  }
+}
 
 export interface JsonOptions {
-  /** Spaces per level. Default 2. */
+  /** Spaces per level for new files. Existing files keep their indent. */
   readonly indent?: number
 }
 
 export function json(options: JsonOptions = {}): Plugin {
-  const indent = options.indent ?? 2
-  const format: Format = {
-    id: 'json',
-    extensions: ['json'],
-    parse(text) {
-      const data: unknown = JSON.parse(text)
-      if (!isMessageTree(data))
-        throw new TypeError('JSON locale file must be an object of strings, numbers, booleans, null or nested objects')
-      return data
-    },
-    serialize: (tree: MessageTree) => `${JSON.stringify(tree, null, indent)}\n`,
-  }
-  return definePlugin({ name: 'x18n:format-json', formats: [format] })
+  return { name: 'x18n:format-json', formats: [createJsonFormat('json', ['json'], true, options.indent)] }
+}
+
+export function jsonc(options: JsonOptions = {}): Plugin {
+  return { name: 'x18n:format-jsonc', formats: [createJsonFormat('jsonc', ['jsonc'], true, options.indent)] }
 }

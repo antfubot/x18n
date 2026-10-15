@@ -1,0 +1,127 @@
+import type { Placeholder, PlaceholderSyntax, Plugin } from '@x18n/core'
+
+function byRegex(id: string, regex: RegExp, example: string): PlaceholderSyntax {
+  return {
+    id,
+    example,
+    find(value) {
+      const out: Placeholder[] = []
+      for (const match of value.matchAll(regex)) {
+        out.push({
+          syntax: id,
+          text: match[0],
+          name: match[1] ?? match[0],
+          range: { start: match.index, end: match.index + match[0].length },
+        })
+      }
+      return out
+    },
+  }
+}
+
+/** `{name}`: vue-i18n named interpolation and similar. */
+export const braces: PlaceholderSyntax = byRegex('braces', /(?<![{$])\{\s*([\w.-]+)\s*\}(?!\})/g, '{name}')
+/** `{{name}}`: i18next interpolation, including `{{name, format}}` and `{{- raw}}`. */
+export const doubleBraces: PlaceholderSyntax = byRegex('double-braces', /\{\{-?\s*([\w.]+)\s*(?:,[^}]*)?\}\}/g, '{{name}}')
+/** `%{name}`: Rails, Polyglot. */
+export const percentBraces: PlaceholderSyntax = byRegex('percent-braces', /%\{(\w+)\}/g, '%{name}')
+/** `%s`, `%d`, `%1$s`: printf. */
+export const printf: PlaceholderSyntax = byRegex('printf', /%(?:(\d+)\$)?[-+ 0#]*(?:[1-9]\d*)?(?:\.\d+)?[sdifoxXeEgGc@]/g, '%s')
+/** `@:key` and `@.modifier:key`: vue-i18n linked messages. */
+export const linked: PlaceholderSyntax = byRegex('linked', /@(?:\.\w+)?:\(?([\w.-]+)\)?/g, '@:key')
+/** `$t(key)` nesting in i18next. */
+export const nesting: PlaceholderSyntax = byRegex('nesting', /\$t\(([\w.:-]+)(?:,[^)]*)?\)/g, '$t(key)')
+
+/** Offset after the `}` that closes the `{` at `start`, or -1. */
+function closingBrace(value: string, start: number, to: number): number {
+  let depth = 1
+  let j = start + 1
+  while (j < to && depth > 0) {
+    if (value[j] === '{')
+      depth++
+    else if (value[j] === '}')
+      depth--
+    j++
+  }
+  return depth > 0 ? -1 : j
+}
+
+/** ICU MessageFormat arguments: `{name}`, `{count, plural, ...}`. Nested sub-messages are scanned too. */
+export const icu: PlaceholderSyntax = {
+  id: 'icu',
+  example: '{name}',
+  find(value) {
+    const out: Placeholder[] = []
+    const scan = (from: number, to: number): void => {
+      let i = from
+      while (i < to) {
+        const char = value[i]
+        if (char === '\'') {
+          // `'{'` is a quoted literal brace; `''` is an apostrophe.
+          const close = value.indexOf('\'', i + 1)
+          if (value[i + 1] === '{' || value[i + 1] === '}')
+            i = close === -1 ? to : close + 1
+          else
+            i++
+          continue
+        }
+        if (char !== '{') {
+          i++
+          continue
+        }
+        const j = closingBrace(value, i, to)
+        if (j === -1)
+          return
+        const body = value.slice(i + 1, j - 1)
+        const name = /^\s*([\w.-]+)/.exec(body)?.[1]
+        if (name)
+          out.push({ syntax: 'icu', text: value.slice(i, j), name, range: { start: i, end: j } })
+        const firstSub = body.indexOf('{')
+        if (firstSub !== -1)
+          scan(i + 1 + firstSub, j - 1)
+        i = j
+      }
+    }
+    scan(0, value.length)
+    return out
+  },
+  validate(value) {
+    let depth = 0
+    let quoted = false
+    for (let i = 0; i < value.length; i++) {
+      const char = value[i]
+      if (char === '\'' && (value[i + 1] === '{' || value[i + 1] === '}' || quoted)) {
+        quoted = !quoted
+        continue
+      }
+      if (quoted)
+        continue
+      if (char === '{')
+        depth++
+      if (char === '}')
+        depth--
+      if (depth < 0)
+        return [`Unexpected "}" at ${i}`]
+    }
+    if (depth > 0)
+      return ['Unclosed "{"']
+    const errors: string[] = []
+    for (const match of value.matchAll(/\{\s*([\w.-]+)\s*,\s*(plural|select|selectordinal)\s*,([\s\S]*)\}/g)) {
+      if (!/\bother\s*\{/.test(match[3] ?? ''))
+        errors.push(`"${match[1]}" ${match[2]} has no "other" case`)
+    }
+    return errors
+  },
+}
+
+/** Registers placeholder syntaxes. Presets call it with their library's syntaxes. */
+export function placeholders(...syntaxes: PlaceholderSyntax[]): Plugin {
+  return { name: `x18n:placeholders-${syntaxes.map(s => s.id).join('-')}`, placeholders: syntaxes }
+}
+
+/** A syntax from a YAML shape such as `{name}`, `{{name}}` or `%{name}`, where `name` marks the name. */
+export function placeholderFromShape(shape: string): PlaceholderSyntax {
+  const [before, after] = shape.split('name')
+  const escape = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return byRegex(`shape:${shape}`, new RegExp(`${escape(before ?? '')}\\s*([\\w.-]+)\\s*${escape(after ?? '')}`, 'g'), shape)
+}

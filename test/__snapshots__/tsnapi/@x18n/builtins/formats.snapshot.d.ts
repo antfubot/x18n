@@ -9,4 +9,7 @@ export interface JsonOptions {
 
 // #region Functions
 export declare function json(_?: JsonOptions): Plugin;
+export declare function json5(): Plugin;
+export declare function jsonc(_?: JsonOptions): Plugin;
+export declare function yaml(): Plugin;
 // #endregion

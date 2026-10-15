@@ -1,9 +1,18 @@
 import { defineConfig } from 'tsdown'
 
 export default defineConfig({
-  entry: { formats: 'src/formats/index.ts' },
+  entry: {
+    'index': 'src/index.ts',
+    'checks': 'src/checks/index.ts',
+    'finders': 'src/finders/index.ts',
+    'formats': 'src/formats/index.ts',
+    'manifests': 'src/manifests/index.ts',
+    'placeholders': 'src/placeholders/index.ts',
+    'presets': 'src/presets/index.ts',
+    'scanners': 'src/scanners/index.ts',
+    'yaml-plugin': 'src/yaml-plugin/index.ts',
+  },
   dts: true,
-  // Kept by hand: tsdown maps a single entry to ".", but builtins only ship subpaths.
-  exports: false,
+  exports: true,
   publint: true,
 })

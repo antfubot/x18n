@@ -14,7 +14,15 @@
   "bugs": "https://github.com/antfu/x18n/issues",
   "sideEffects": false,
   "exports": {
+    ".": "./dist/index.mjs",
+    "./checks": "./dist/checks.mjs",
+    "./finders": "./dist/finders.mjs",
     "./formats": "./dist/formats.mjs",
+    "./manifests": "./dist/manifests.mjs",
+    "./placeholders": "./dist/placeholders.mjs",
+    "./presets": "./dist/presets.mjs",
+    "./scanners": "./dist/scanners.mjs",
+    "./yaml-plugin": "./dist/yaml-plugin.mjs",
     "./package.json": "./package.json"
   },
   "files": [
@@ -26,6 +34,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@x18n/core": "workspace:*"
+    "@x18n/core": "workspace:*",
+    "json5": "catalog:deps",
+    "jsonc-parser": "catalog:deps",
+    "yaml": "catalog:deps"
   }
 }
