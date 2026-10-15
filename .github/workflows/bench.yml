@@ -1,0 +1,38 @@
+name: Benchmark
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: pr
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: pr/package.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+      # The base branch gives the baseline; the PR fails on a regression of more than 20%.
+      - name: Baseline
+        working-directory: base
+        run: |
+          if [ -f scripts/bench.ts ]; then
+            pnpm install --frozen-lockfile && pnpm build && pnpm bench || true
+          fi
+      - name: Benchmark
+        working-directory: pr
+        run: |
+          pnpm install --frozen-lockfile && pnpm build
+          mkdir -p bench && cp ../base/bench/results.json bench/baseline.json 2>/dev/null || true
+          pnpm bench

@@ -79,19 +79,15 @@ async function loadGitignore(root: string): Promise<(path: string) => boolean> {
 /** A persistent cache in one JSON file. Only entries used in this session are written back, so it stays bounded. */
 function createFileCache(dir: string): CacheStore & { flush: () => Promise<void> } {
   const file = join(dir, 'cache.json')
-  let entries: Map<string, string> | undefined
+  let entries: Promise<Map<string, string>> | undefined
   const used = new Map<string, string>()
   let dirty = false
-  const load = async (): Promise<Map<string, string>> => {
-    if (!entries) {
-      try {
-        const data: unknown = JSON.parse(await readFile(file, 'utf8'))
-        entries = new Map(typeof data === 'object' && data !== null ? Object.entries(data).filter((e): e is [string, string] => typeof e[1] === 'string') : [])
-      }
-      catch {
-        entries = new Map()
-      }
-    }
+  // One read for every concurrent `get`.
+  const load = (): Promise<Map<string, string>> => {
+    entries ??= readFile(file, 'utf8').then((text) => {
+      const data: unknown = JSON.parse(text)
+      return new Map(typeof data === 'object' && data !== null ? Object.entries(data).filter((e): e is [string, string] => typeof e[1] === 'string') : [])
+    }).catch(() => new Map<string, string>())
     return entries
   }
   return {

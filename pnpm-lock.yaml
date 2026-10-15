@@ -367,6 +367,9 @@ importers:
       '@types/node':
         specifier: catalog:types
         version: 26.6.5
+      '@x18n/node':
+        specifier: workspace:*
+        version: link:packages/node
       bumpp:
         specifier: catalog:cli
         version: 12.3.0

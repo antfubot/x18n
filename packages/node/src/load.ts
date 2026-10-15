@@ -1,4 +1,4 @@
-import type { Builtins, Host, Project, ScanResult, SourceFile, UserConfig } from '@x18n/core'
+import type { Builtins, Host, Project, UserConfig } from '@x18n/core'
 import type { NodeHost } from './host'
 import { dirname, relative, resolve } from 'node:path'
 import { createBuiltins } from '@x18n/builtins'
@@ -22,8 +22,6 @@ export interface LoadOptions {
   readonly logger?: NodeHost['logger']
   /** Wraps each project's host, for example with an overlay of unsaved editor buffers. */
   readonly wrapHost?: ((host: NodeHost) => Host) | undefined
-  /** Scans many files at once, for example on worker threads. */
-  readonly scanFiles?: ((files: readonly SourceFile[]) => Promise<readonly ScanResult[]>) | undefined
 }
 
 export interface LoadedProject {
@@ -92,7 +90,7 @@ export async function loadWorkspace(options: LoadOptions): Promise<Workspace> {
       loadPlugin: createPluginLoader(spec.configFile ? dirname(spec.configFile) : spec.root),
       manifestRoots: manifestRootsOf(spec.root, gitRoot),
     })
-    const project = createProject({ host: projectHost, setup, scanFiles: options.scanFiles })
+    const project = createProject({ host: projectHost, setup })
     await project.ready
     await host.flush()
     loaded.push({ name, root: spec.root, configFile: spec.configFile, host, project })

@@ -19,8 +19,6 @@ import { createUsageResolver, derivedBase, prefixMatches, suppressedRanges } fro
 export interface CreateProjectOptions {
   readonly host: Host
   readonly setup: Setup
-  /** Scans many files at once, for example on worker threads. Default: in-process. */
-  readonly scanFiles?: ((files: readonly SourceFile[]) => Promise<readonly ScanResult[]>) | undefined
 }
 
 interface FileState {
@@ -42,6 +40,14 @@ interface Candidate {
 
 const scanConcurrency = 64
 
+interface ResourceIndex {
+  readonly messages: Map<KeyString, Map<LocaleCode, Message[]>>
+  readonly keyPaths: Map<KeyString, { namespace: string | undefined, path: string[] }>
+  readonly nodes: Map<string, ResourceNode[]>
+  readonly parents: Set<KeyString>
+  readonly derived: Map<KeyString, KeyString[]>
+}
+
 export function createProject(options: CreateProjectOptions): Project {
   const { host, setup } = options
   const { config, registry } = setup
@@ -59,6 +65,9 @@ export function createProject(options: CreateProjectOptions): Project {
   let resolver: UsageResolver
   let watcher: { dispose: () => void } | undefined
   let usageEligible: (path: string) => boolean = () => false
+  // Rebuilt only when resources change, so a source edit re-indexes just its usages.
+  let resourceIndex: ResourceIndex | undefined
+  let resolved = new WeakMap<FileState, Usage[]>()
 
   const normalizers = registry.plugins.flatMap(plugin => plugin.normalizeKey ? [plugin.normalizeKey] : [])
   const transforms = registry.plugins.flatMap(plugin => plugin.transformResource ? [plugin.transformResource] : [])
@@ -201,6 +210,8 @@ export function createProject(options: CreateProjectOptions): Project {
     if (!found.includes(sourceLocale) && found.length === 0)
       locales = [sourceLocale]
     resolver = createUsageResolver(config, namespaced, normalizers)
+    resolved = new WeakMap()
+    resourceIndex = undefined
   }
 
   // ---- Scanning ----
@@ -263,11 +274,6 @@ export function createProject(options: CreateProjectOptions): Project {
         void host.cache.set(cacheKey, JSON.stringify(result))
     }
 
-    if (options.scanFiles && pending.length > scanConcurrency) {
-      const results = await options.scanFiles(pending)
-      pending.forEach((file, index) => store(file, results[index]))
-      return
-    }
     for (let i = 0; i < pending.length; i += scanConcurrency) {
       await Promise.all(pending.slice(i, i + scanConcurrency).map(async (file) => {
         try {
@@ -306,7 +312,7 @@ export function createProject(options: CreateProjectOptions): Project {
   }
   let index: Index | undefined
 
-  function buildIndex(): Index {
+  function buildResourceIndex(): ResourceIndex {
     const messages = new Map<KeyString, Map<LocaleCode, Message[]>>()
     const keyPaths = new Map<KeyString, { namespace: string | undefined, path: string[] }>()
     const nodes = new Map<string, ResourceNode[]>()
@@ -346,16 +352,34 @@ export function createProject(options: CreateProjectOptions): Project {
       visit(state.tree, [])
     }
     // Parent keys of every leaf, so `t('a')` on an object is known.
-    for (const [key, { namespace, path }] of keyPaths) {
+    for (const { namespace, path } of keyPaths.values()) {
       for (let i = 1; i < path.length; i++)
         parents.add(joinKey(namespace, path.slice(0, i)))
-      void key
     }
+    const derived = new Map<KeyString, KeyString[]>()
+    if (config.usage.derivedKeys.length > 0) {
+      for (const key of messages.keys()) {
+        const base = baseOf(key)
+        if (base) {
+          const list = derived.get(base) ?? []
+          derived.set(base, list)
+          list.push(key)
+        }
+      }
+    }
+    return { messages, keyPaths, nodes, parents, derived }
+  }
 
+  function buildIndex(): Index {
+    resourceIndex ??= buildResourceIndex()
     const usages: Usage[] = []
     for (const [path, state] of files) {
-      for (const candidate of state.result.usages)
-        usages.push(resolver.resolve(candidate, state.result.scopes ?? [], path, 'scanner'))
+      let list = resolved.get(state)
+      if (!list) {
+        list = state.result.usages.map(candidate => resolver.resolve(candidate, state.result.scopes ?? [], path, 'scanner'))
+        resolved.set(state, list)
+      }
+      usages.push(...list)
     }
     const usagesByKey = new Map<KeyString, Usage[]>()
     const prefixUsages: Usage[] = []
@@ -370,18 +394,7 @@ export function createProject(options: CreateProjectOptions): Project {
       usagesByKey.set(usage.key, list)
       list.push(usage)
     }
-    const derived = new Map<KeyString, KeyString[]>()
-    if (config.usage.derivedKeys.length > 0) {
-      for (const key of messages.keys()) {
-        const base = baseOf(key)
-        if (base) {
-          const list = derived.get(base) ?? []
-          derived.set(base, list)
-          list.push(key)
-        }
-      }
-    }
-    return { revision, messages, keyPaths, nodes, parents, usages, usagesByKey, prefixUsages, derived }
+    return { revision, ...resourceIndex, usages, usagesByKey, prefixUsages }
   }
 
   function idx(): Index {

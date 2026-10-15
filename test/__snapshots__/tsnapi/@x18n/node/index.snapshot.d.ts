@@ -18,7 +18,6 @@ export interface LoadOptions {
   readonly builtins?: Builtins | undefined;
   readonly logger?: NodeHost["logger"];
   readonly wrapHost?: ((_: NodeHost) => Host) | undefined;
-  readonly scanFiles?: ((_: readonly SourceFile[]) => Promise<readonly ScanResult[]>) | undefined;
 }
 export interface MigrateOptions {
   readonly format?: "ts" | "yml" | "json" | undefined;

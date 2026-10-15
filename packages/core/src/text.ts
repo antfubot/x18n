@@ -41,7 +41,21 @@ export interface LineIndex {
   readonly lineCount: number
 }
 
+const lineIndexes = new Map<string, LineIndex>()
+
+/** Line index of a text, cached for the few texts used at a time (reporters, LSP ranges). */
 export function createLineIndex(text: string): LineIndex {
+  let index = lineIndexes.get(text)
+  if (!index) {
+    if (lineIndexes.size >= 16)
+      lineIndexes.delete(lineIndexes.keys().next().value!)
+    index = buildLineIndex(text)
+    lineIndexes.set(text, index)
+  }
+  return index
+}
+
+function buildLineIndex(text: string): LineIndex {
   const starts = [0]
   for (let i = 0; i < text.length; i++) {
     if (text.charCodeAt(i) === 10)

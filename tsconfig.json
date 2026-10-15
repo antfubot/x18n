@@ -2,7 +2,8 @@
   "extends": "./tsconfig.base.json",
   "include": [
     "*.ts",
-    "test"
+    "test",
+    "scripts"
   ],
   "exclude": [
     "test/fixtures"

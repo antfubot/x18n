@@ -85,7 +85,6 @@ export interface ConfigContext {
 export interface CreateProjectOptions {
   readonly host: Host;
   readonly setup: Setup;
-  readonly scanFiles?: ((_: readonly SourceFile[]) => Promise<readonly ScanResult[]>) | undefined;
 }
 export interface Decision {
   readonly id: string;

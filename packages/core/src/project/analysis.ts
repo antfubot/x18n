@@ -1,11 +1,10 @@
 import type { X18nError } from '../errors'
 import type { PluginRegistry } from '../plugins'
 import type { CheckSetting, ResolvedConfig } from '../types/config'
-import type { Diagnostic, JsonObject, KeyString, LocaleCode, LocaleInfo, Message, MessageTree, NodeRange, Resource, Severity, Usage } from '../types/model'
+import type { Diagnostic, JsonObject, KeyString, LocaleCode, LocaleInfo, Message, MessageTree, NodeRange, Placeholder, Resource, Severity, Usage } from '../types/model'
 import type { Check, CheckContext, DiagnosticInput, HardString, LocaleCoverage, ScanResult } from '../types/plugin'
 import type { Analysis } from '../types/project'
 import { keyMatcher } from '../keys'
-import { prefixMatches } from './usages'
 
 export interface ResourceState {
   readonly resource: Resource
@@ -134,6 +133,8 @@ export function createAnalyzer(options: AnalyzerOptions): { readonly analyze: ()
   let memo: Analysis | undefined
   const ignored = keyMatcher(config.ignoreKeys)
   const inUse = keyMatcher(config.usage.keysInUse)
+  // Values rarely change between revisions; finding placeholders is the cost of several checks.
+  const placeholderCache = new Map<string, readonly Placeholder[]>()
 
   function analyze(): Analysis {
     const state = options.state()
@@ -163,21 +164,28 @@ export function createAnalyzer(options: AnalyzerOptions): { readonly analyze: ()
           referenceSyntaxes.forEach(syntax => syntax.find(value).forEach(p => referenced.add(p.name)))
       }
     }
+    const prefixes = [...new Set(state.prefixUsages.flatMap(usage => usage.key === undefined ? [] : [usage.key]))]
     const isUsed = (key: KeyString): boolean => {
       if (state.usagesByKey.has(key) || inUse(key) || referenced.has(key))
         return true
       const base = options.baseOf(key)
       if (base !== undefined && (state.usagesByKey.has(base) || inUse(base)))
         return true
-      return state.prefixUsages.some(usage => prefixMatches(usage, key))
+      return prefixes.some(prefix => key.startsWith(prefix))
     }
     const unused = hasScanners ? allKeys.filter(key => !isUsed(key)) : []
     const undefinedUsages = state.usages.filter(usage =>
       usage.dynamic === false && usage.key !== undefined && !isDefined(usage.key))
 
     const placeholders = (value: string): ReturnType<CheckContext['placeholders']> => {
-      const out = registry.placeholders.flatMap(syntax => syntax.find(value))
-      return out.sort((a, b) => a.range.start - b.range.start)
+      let found = placeholderCache.get(value)
+      if (!found) {
+        found = registry.placeholders.flatMap(syntax => syntax.find(value)).sort((a, b) => a.range.start - b.range.start)
+        if (placeholderCache.size > 100_000)
+          placeholderCache.clear()
+        placeholderCache.set(value, found)
+      }
+      return found
     }
 
     const baseCtx: Omit<CheckContext, 'options'> = {

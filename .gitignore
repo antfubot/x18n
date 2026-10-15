@@ -22,3 +22,4 @@ packages/vscode/.vsce
 packages/core/schema
 test-results
 playwright-report
+bench

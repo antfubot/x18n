@@ -29,7 +29,8 @@
     "typecheck": "turbo run typecheck && tsc",
     "ci": "pnpm run lint && pnpm run typecheck && pnpm run knip && pnpm run test --run && x18n check",
     "postinstall": "turbo run codegen",
-    "prepare": "git config core.hooksPath .githooks && simple-git-hooks && skills experimental_sync -y"
+    "prepare": "git config core.hooksPath .githooks && simple-git-hooks && skills experimental_sync -y",
+    "bench": "tsx scripts/bench.ts"
   },
   "scripts-info": {
     "build": "Build every package",
@@ -43,13 +44,15 @@
     "typecheck": "Check types of every package",
     "ci": "Run the full continuous integration pipeline",
     "postinstall": "Generate files that typecheck needs",
-    "prepare": "Set up git hooks and skills"
+    "prepare": "Set up git hooks and skills",
+    "bench": "Measure the performance budgets on a generated fixture"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:cli",
     "@antfu/skills": "catalog:agentic",
     "@antfu/utils": "catalog:inlined",
     "@types/node": "catalog:types",
+    "@x18n/node": "workspace:*",
     "bumpp": "catalog:cli",
     "eslint": "catalog:cli",
     "eslint-plugin-slop": "catalog:cli",
