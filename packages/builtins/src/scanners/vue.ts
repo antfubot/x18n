@@ -131,7 +131,7 @@ export function vue(): Plugin {
         if (!script)
           continue
         const lang = script.lang ?? 'js'
-        merge(template.out, scanSource(parseJs, script.content, { calls: ctx.calls, offset: script.loc.start.offset, filename: `script.${lang === 'tsx' || lang === 'jsx' ? lang : lang === 'ts' ? 'ts' : 'js'}` }))
+        merge(template.out, scanSource(parseJs, script.content, { calls: ctx.calls, ignoreCallees: ctx.config.extract.ignoreCallees, offset: script.loc.start.offset, filename: `script.${lang === 'tsx' || lang === 'jsx' ? lang : lang === 'ts' ? 'ts' : 'js'}` }))
       }
       if (descriptor.template?.ast)
         template.node(descriptor.template.ast)

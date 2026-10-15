@@ -164,6 +164,13 @@ export function createCli(): CAC {
   return cli
 }
 
+// `x18n doctor | head` closes stdout early; that is not an error.
+process.stdout.on('error', (error: NodeJS.ErrnoException) => {
+  if (error.code === 'EPIPE')
+    process.exit(0)
+  throw error
+})
+
 // mri drops a lone `-`; keep it as a sentinel that `readInput` maps to stdin.
 const argv = process.argv.map(arg => arg === '-' ? stdinArg : arg)
 try {

@@ -155,4 +155,13 @@ describe('x18n binary', () => {
     expect(result.code).toBe(2)
     expect(result.stderr).toContain('error X18N0001')
   })
+
+  it('keeps the JSON contract of every read command', async () => {
+    const dir = await fixture('vue-i18n')
+    const name = dir.split('/').at(-1)!
+    for (const args of [['status'], ['keys', '--values'], ['get', 'app.greeting'], ['usages'], ['locales'], ['check'], ['prompt', 'translate', '--to', 'de', '--format', 'json']]) {
+      const result = await x18n(dir, [...args, '--json'])
+      expect(result.stdout.replaceAll(name, '<fixture>')).toMatchSnapshot(args.join(' '))
+    }
+  }, 30_000)
 })

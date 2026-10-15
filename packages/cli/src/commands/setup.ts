@@ -60,7 +60,8 @@ export async function init(options: GlobalOptions & { readonly format?: string |
     out(`Wrote ${file}\nDetected presets: ${detected.join(', ') || 'none'}\nLocales: ${project.locales.join(', ')}`)
 }
 
-const literal = (value: unknown): string => JSON.stringify(value, null, 2).replace(/"([a-z_$][\w$]*)":/gi, '$1:').replace(/'/g, '\\\'').replace(/"/g, '\'')
+// JSON is valid TS; only the quotes around plain keys are dropped, so regex strings stay intact.
+const literal = (value: unknown): string => JSON.stringify(value, null, 2).replace(/"([a-z_$][\w$]*)":/gi, '$1:')
 
 /** The TS plugin equivalent of a YAML plugin, using the same built-in factories. */
 function ejectPlugin(data: PluginFile): string {

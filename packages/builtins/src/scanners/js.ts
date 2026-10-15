@@ -87,7 +87,7 @@ class FileScan {
   readonly typed = new Map<string, CallSpec>()
   readonly consumed = new Set<number>()
 
-  constructor(readonly text: string, readonly offset: number, calls: readonly CallSpec[], readonly collectHardStrings: boolean) {
+  constructor(readonly text: string, readonly offset: number, calls: readonly CallSpec[], readonly collectHardStrings: boolean, readonly ignoredCallees: ReadonlySet<string> = new Set()) {
     for (const spec of calls) {
       for (const name of [spec.callee].flat()) {
         if (spec.factory) {
@@ -355,6 +355,10 @@ class FileScan {
     this.hardStrings.push({ text, range: this.range(range), kind, ...attribute ? { attribute } : {} })
   }
 
+  ignoredCall(name: string | undefined): boolean {
+    return name !== undefined && (name.startsWith('console.') || name === 'require' || this.ignoredCallees.has(name))
+  }
+
   /** ---- Walk ---- */
   walk(node: Node, parent: Node | undefined, parentKey: string): void {
     const scoped = node.type === 'FunctionDeclaration' || node.type === 'FunctionExpression' || node.type === 'ArrowFunctionExpression' || node.type === 'BlockStatement'
@@ -424,7 +428,7 @@ class FileScan {
       || parent.type === 'TSLiteralType' || parent.type === 'ImportExpression' || parent.type === 'TSExternalModuleReference' || parent.type === 'TSModuleDeclaration'
       || (parent.type === 'Property' && parentKey === 'key') || (parent.type === 'MemberExpression' && parentKey === 'property')
       || parent.type === 'ExpressionStatement' || parent.type === 'BinaryExpression' || parent.type === 'SwitchCase'
-      || (parent.type === 'CallExpression' && (calleeName(parent.callee)?.startsWith('console.') || calleeName(parent.callee) === 'require'))
+      || (parent.type === 'CallExpression' && this.ignoredCall(calleeName(parent.callee)))
     if (ignoredParent)
       return
     if (isStringLiteral(node))
@@ -519,13 +523,15 @@ export interface ScanSourceOptions {
   readonly filename: string
   /** Parse `text` as one expression (template interpolations). */
   readonly expression?: boolean
+  /** Callees whose string arguments are never hard strings (`extract.ignoreCallees`). */
+  readonly ignoreCallees?: readonly string[] | undefined
 }
 
 export function scanSource(parse: ParseSync, text: string, options: ScanSourceOptions): ScanResult {
   const source = options.expression ? `(${text})` : text
   const shift = options.expression ? -1 : 0
   const result = parse(options.filename, source, { sourceType: 'module', range: false })
-  const scan = new FileScan(source, (options.offset ?? 0) + shift, options.calls, options.hardStrings !== false)
+  const scan = new FileScan(source, (options.offset ?? 0) + shift, options.calls, options.hardStrings !== false, new Set(options.ignoreCallees))
   scan.walk(result.program, undefined, '')
   scan.markers(result.program, result.comments)
   return scan.result()
@@ -538,7 +544,7 @@ export function js(): Plugin {
     extensions: ['js', 'jsx', 'mjs', 'cjs', 'ts', 'tsx', 'mts', 'cts'],
     async scan(file, ctx) {
       const parse = await loadParser()
-      return scanSource(parse, file.text, { calls: ctx.calls, filename: file.path, hardStrings: true })
+      return scanSource(parse, file.text, { calls: ctx.calls, filename: file.path, hardStrings: true, ignoreCallees: ctx.config.extract.ignoreCallees })
     },
   }
   return { name: 'x18n:scanner-js', scanners: [scanner] }

@@ -1,0 +1,595 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`x18n binary > keeps the JSON contract of every read command > check 1`] = `
+"{
+  "x18n": 1,
+  "command": "check",
+  "data": {
+    "projects": [
+      {
+        "name": "<fixture>",
+        "summary": {
+          "errors": 2,
+          "warnings": 4,
+          "infos": 0,
+          "files": 3
+        },
+        "coverage": [
+          {
+            "locale": "en",
+            "total": 8,
+            "translated": 8,
+            "missing": 0,
+            "empty": 0
+          },
+          {
+            "locale": "de",
+            "total": 8,
+            "translated": 6,
+            "missing": 1,
+            "empty": 1
+          }
+        ]
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "project": "<fixture>",
+      "code": "missing-key",
+      "severity": "error",
+      "message": "\\"app.titel\\" is not defined in en.",
+      "key": "app.titel",
+      "locale": "en",
+      "file": "src/App.vue",
+      "range": {
+        "line": 17,
+        "column": 15,
+        "endLine": 17,
+        "endColumn": 24,
+        "start": 361,
+        "end": 370
+      },
+      "fixes": [
+        {
+          "title": "Add \\"app.titel\\" to en",
+          "ops": [
+            {
+              "type": "set",
+              "key": "app.titel",
+              "locale": "en",
+              "value": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "project": "<fixture>",
+      "code": "placeholder-mismatch",
+      "severity": "error",
+      "message": "\\"app.greeting\\" in de has different placeholders than en: missing name.",
+      "key": "app.greeting",
+      "locale": "de",
+      "file": "src/locales/de.json",
+      "range": {
+        "line": 4,
+        "column": 6,
+        "endLine": 4,
+        "endColumn": 14,
+        "start": 44,
+        "end": 52
+      },
+      "fixes": []
+    },
+    {
+      "project": "<fixture>",
+      "code": "empty-translation",
+      "severity": "warning",
+      "message": "\\"nav.about\\" is empty in de.",
+      "key": "nav.about",
+      "locale": "de",
+      "file": "src/locales/de.json",
+      "range": {
+        "line": 8,
+        "column": 6,
+        "endLine": 8,
+        "endColumn": 11,
+        "start": 105,
+        "end": 110
+      },
+      "fixes": []
+    },
+    {
+      "project": "<fixture>",
+      "code": "missing-translation",
+      "severity": "warning",
+      "message": "\\"pages.about.title\\" is missing in de.",
+      "key": "pages.about.title",
+      "locale": "en",
+      "file": "src/locales/en.json",
+      "range": {
+        "line": 15,
+        "column": 8,
+        "endLine": 15,
+        "endColumn": 13,
+        "start": 210,
+        "end": 215
+      },
+      "fixes": [
+        {
+          "title": "Add empty values in de",
+          "ops": [
+            {
+              "type": "set",
+              "key": "pages.about.title",
+              "locale": "de",
+              "value": ""
+            }
+          ]
+        },
+        {
+          "title": "Copy the source value",
+          "ops": [
+            {
+              "type": "set",
+              "key": "pages.about.title",
+              "locale": "de",
+              "value": "About us"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "project": "<fixture>",
+      "code": "unused-key",
+      "severity": "warning",
+      "message": "\\"unused\\" is not used.",
+      "key": "unused",
+      "file": "src/locales/en.json",
+      "range": {
+        "line": 18,
+        "column": 4,
+        "endLine": 18,
+        "endColumn": 10,
+        "start": 243,
+        "end": 249
+      },
+      "fixes": [
+        {
+          "title": "Delete \\"unused\\" in every locale",
+          "ops": [
+            {
+              "type": "delete",
+              "key": "unused",
+              "locales": "all"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "project": "<fixture>",
+      "code": "unused-key",
+      "severity": "warning",
+      "message": "\\"linked\\" is not used.",
+      "key": "linked",
+      "file": "src/locales/en.json",
+      "range": {
+        "line": 19,
+        "column": 4,
+        "endLine": 19,
+        "endColumn": 10,
+        "start": 273,
+        "end": 279
+      },
+      "fixes": [
+        {
+          "title": "Delete \\"linked\\" in every locale",
+          "ops": [
+            {
+              "type": "delete",
+              "key": "linked",
+              "locales": "all"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": []
+}
+"
+`;
+
+exports[`x18n binary > keeps the JSON contract of every read command > get app.greeting 1`] = `
+"{
+  "x18n": 1,
+  "command": "get",
+  "data": {
+    "projects": [
+      {
+        "name": "<fixture>",
+        "key": "app.greeting",
+        "messages": [
+          {
+            "locale": "en",
+            "value": "Hello {name}",
+            "file": "src/locales/en.json",
+            "line": 4,
+            "column": 6
+          },
+          {
+            "locale": "de",
+            "value": "Hallo",
+            "file": "src/locales/de.json",
+            "line": 4,
+            "column": 6
+          }
+        ],
+        "missing": [],
+        "usages": [
+          {
+            "possible": false,
+            "raw": "app.greeting",
+            "file": "src/App.vue",
+            "line": 11,
+            "column": 16
+          }
+        ],
+        "diagnostics": [
+          {
+            "project": "<fixture>",
+            "code": "placeholder-mismatch",
+            "severity": "error",
+            "message": "\\"app.greeting\\" in de has different placeholders than en: missing name.",
+            "key": "app.greeting",
+            "locale": "de",
+            "file": "src/locales/de.json",
+            "range": {
+              "line": 4,
+              "column": 6,
+              "endLine": 4,
+              "endColumn": 14,
+              "start": 44,
+              "end": 52
+            },
+            "fixes": []
+          }
+        ]
+      }
+    ]
+  },
+  "diagnostics": [],
+  "errors": []
+}
+"
+`;
+
+exports[`x18n binary > keeps the JSON contract of every read command > keys --values 1`] = `
+"{
+  "x18n": 1,
+  "command": "keys",
+  "data": {
+    "projects": [
+      {
+        "name": "<fixture>",
+        "total": 8,
+        "keys": [
+          {
+            "key": "app.greeting",
+            "values": {
+              "en": "Hello {name}",
+              "de": "Hallo"
+            }
+          },
+          {
+            "key": "app.title",
+            "values": {
+              "en": "My App",
+              "de": "Meine App"
+            }
+          },
+          {
+            "key": "linked",
+            "values": {
+              "en": "@:app.title!",
+              "de": "@:app.title!"
+            }
+          },
+          {
+            "key": "nav.about",
+            "values": {
+              "en": "About",
+              "de": ""
+            }
+          },
+          {
+            "key": "nav.home",
+            "values": {
+              "en": "Home",
+              "de": "Start"
+            }
+          },
+          {
+            "key": "pages.about.title",
+            "values": {
+              "en": "About us"
+            }
+          },
+          {
+            "key": "pages.home.title",
+            "values": {
+              "en": "Welcome",
+              "de": "Willkommen"
+            }
+          },
+          {
+            "key": "unused",
+            "values": {
+              "en": "Nobody uses me",
+              "de": "Niemand"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "diagnostics": [],
+  "errors": []
+}
+"
+`;
+
+exports[`x18n binary > keeps the JSON contract of every read command > locales 1`] = `
+"{
+  "x18n": 1,
+  "command": "locales",
+  "data": {
+    "projects": [
+      {
+        "name": "<fixture>",
+        "sourceLocale": "en",
+        "locales": [
+          {
+            "code": "en",
+            "language": "en",
+            "displayName": "English",
+            "flag": "🇺🇸",
+            "pluralCategories": [
+              "one",
+              "other"
+            ],
+            "resources": [
+              "src/locales/en.json"
+            ]
+          },
+          {
+            "code": "de",
+            "language": "de",
+            "displayName": "German",
+            "flag": "🇩🇪",
+            "pluralCategories": [
+              "one",
+              "other"
+            ],
+            "resources": [
+              "src/locales/de.json"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "diagnostics": [],
+  "errors": []
+}
+"
+`;
+
+exports[`x18n binary > keeps the JSON contract of every read command > prompt translate --to de --format json 1`] = `
+"{
+  "x18n": 1,
+  "command": "prompt translate",
+  "data": {
+    "kind": "translate",
+    "project": "<fixture>",
+    "from": "en",
+    "to": "de",
+    "targetName": "German",
+    "total": 2,
+    "remaining": 0,
+    "rules": [
+      "Keep every placeholder exactly as written (\`{name}\`, \`@:key\`); do not translate their names.",
+      "Keep markup tags and their attributes as they are.",
+      "Match the tone and wording of the existing messages in the target locale.",
+      "Do not translate glossary terms marked \\"do not translate\\"."
+    ],
+    "notes": [
+      "de uses the plural categories one, other."
+    ],
+    "glossary": [],
+    "examples": [
+      {
+        "key": "app.greeting",
+        "source": "Hello {name}",
+        "target": "Hallo"
+      },
+      {
+        "key": "app.title",
+        "source": "My App",
+        "target": "Meine App"
+      },
+      {
+        "key": "linked",
+        "source": "@:app.title!",
+        "target": "@:app.title!"
+      },
+      {
+        "key": "nav.home",
+        "source": "Home",
+        "target": "Start"
+      },
+      {
+        "key": "pages.home.title",
+        "source": "Welcome",
+        "target": "Willkommen"
+      }
+    ],
+    "items": [
+      {
+        "key": "nav.about",
+        "source": "About",
+        "placeholders": [],
+        "context": [
+          {
+            "path": "src/App.vue",
+            "line": 14,
+            "snippet": "      <a>{{ t('nav.home') }}</a>\\n      <a v-t=\\"'nav.about'\\" />\\n    </nav>"
+          }
+        ]
+      },
+      {
+        "key": "pages.about.title",
+        "source": "About us",
+        "placeholders": [],
+        "context": [
+          {
+            "path": "src/App.vue",
+            "line": 16,
+            "snippet": "    </nav>\\n    <p>{{ $t(\`pages.\${page}.title\`) }}</p>\\n    <p>{{ $t('app.titel') }}</p>"
+          }
+        ]
+      }
+    ],
+    "instructions": [
+      "Write a JSON file \`{ \\"de\\": { \\"<key>\\": \\"<translation>\\" } }\` and run \`x18n apply <file> --json\`, or run \`x18n set <key> --locale de --value <text>\` per key.",
+      "Then run \`x18n check --only placeholder-mismatch,invalid-syntax --locale de --json\` and fix the reported keys.",
+      "To find more work: \`x18n keys --missing de --json --limit 50\`."
+    ]
+  },
+  "diagnostics": [],
+  "errors": []
+}
+"
+`;
+
+exports[`x18n binary > keeps the JSON contract of every read command > status 1`] = `
+"{
+  "x18n": 1,
+  "command": "status",
+  "data": {
+    "projects": [
+      {
+        "name": "<fixture>",
+        "root": ".",
+        "sourceLocale": "en",
+        "locales": [
+          {
+            "locale": "en",
+            "total": 8,
+            "translated": 8,
+            "missing": 0,
+            "empty": 0,
+            "percent": 100
+          },
+          {
+            "locale": "de",
+            "total": 8,
+            "translated": 6,
+            "missing": 1,
+            "empty": 1,
+            "percent": 75
+          }
+        ],
+        "resources": 2,
+        "keys": 8,
+        "usages": 6,
+        "summary": {
+          "errors": 2,
+          "warnings": 4,
+          "infos": 0
+        }
+      }
+    ]
+  },
+  "diagnostics": [],
+  "errors": []
+}
+"
+`;
+
+exports[`x18n binary > keeps the JSON contract of every read command > usages 1`] = `
+"{
+  "x18n": 1,
+  "command": "usages",
+  "data": {
+    "projects": [
+      {
+        "name": "<fixture>",
+        "total": 6,
+        "usages": [
+          {
+            "key": "app.title",
+            "raw": "app.title",
+            "possible": false,
+            "dynamic": false,
+            "file": "src/App.vue",
+            "line": 5,
+            "column": 18
+          },
+          {
+            "key": "app.greeting",
+            "raw": "app.greeting",
+            "possible": false,
+            "dynamic": false,
+            "file": "src/App.vue",
+            "line": 11,
+            "column": 16
+          },
+          {
+            "key": "nav.home",
+            "raw": "nav.home",
+            "possible": false,
+            "dynamic": false,
+            "file": "src/App.vue",
+            "line": 13,
+            "column": 16
+          },
+          {
+            "key": "nav.about",
+            "raw": "nav.about",
+            "possible": false,
+            "dynamic": false,
+            "file": "src/App.vue",
+            "line": 14,
+            "column": 16
+          },
+          {
+            "key": "pages.",
+            "raw": "pages.",
+            "possible": true,
+            "dynamic": "prefix",
+            "file": "src/App.vue",
+            "line": 16,
+            "column": 15
+          },
+          {
+            "key": "app.titel",
+            "raw": "app.titel",
+            "possible": false,
+            "dynamic": false,
+            "file": "src/App.vue",
+            "line": 17,
+            "column": 15
+          }
+        ]
+      }
+    ]
+  },
+  "diagnostics": [],
+  "errors": []
+}
+"
+`;

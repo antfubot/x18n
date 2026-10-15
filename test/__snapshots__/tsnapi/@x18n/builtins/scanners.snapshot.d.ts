@@ -8,6 +8,7 @@ export interface ScanSourceOptions {
   readonly hardStrings?: boolean;
   readonly filename: string;
   readonly expression?: boolean;
+  readonly ignoreCallees?: readonly string[] | undefined;
 }
 // #endregion
 
