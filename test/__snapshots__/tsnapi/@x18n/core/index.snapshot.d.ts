@@ -474,6 +474,7 @@ export interface Project {
     readonly path: string;
   })[];
   readonly analyze: () => Analysis;
+  readonly prompt: (_: "translate" | "review", _: LocaleCode, _?: PromptOptions) => PromptData;
   readonly explain: () => ProjectExplanation;
   readonly localeInfo: (_: LocaleCode) => LocaleInfo;
   readonly text: (_: string) => string | undefined;
@@ -531,9 +532,48 @@ export interface PromptContext {
   readonly targetLocale: LocaleCode;
   readonly localeInfo: LocaleInfo;
 }
+export interface PromptData {
+  readonly kind: "translate" | "review";
+  readonly project: string;
+  readonly from: LocaleCode;
+  readonly to: LocaleCode;
+  readonly targetName: string | undefined;
+  readonly total: number;
+  readonly remaining: number;
+  readonly nextCursor: string | undefined;
+  readonly rules: readonly string[];
+  readonly notes: readonly string[];
+  readonly glossary: readonly {
+    readonly term: string;
+    readonly translation: string | undefined;
+    readonly note: string | undefined;
+    readonly doNotTranslate: boolean;
+  }[];
+  readonly examples: readonly {
+    readonly key: KeyString;
+    readonly source: string;
+    readonly target: string;
+  }[];
+  readonly items: readonly PromptItem[];
+  readonly instructions: readonly string[];
+}
 export interface PromptDraft {
   readonly rules: string[];
   readonly notes: string[];
+}
+export interface PromptItem {
+  readonly key: KeyString;
+  readonly source: string;
+  readonly placeholders: readonly string[];
+  readonly existing: string | undefined;
+  readonly context: readonly UsageContext[];
+}
+export interface PromptOptions {
+  readonly keys?: string | readonly KeyString[] | undefined;
+  readonly namespace?: string | undefined;
+  readonly limit?: number | undefined;
+  readonly cursor?: string | undefined;
+  readonly context?: boolean | undefined;
 }
 export interface RegexScannerSpec {
   readonly extensions: readonly string[];
@@ -754,6 +794,11 @@ export interface UsageCandidate {
   readonly keyPrefix?: string | undefined;
   readonly locale?: LocaleCode | undefined;
 }
+export interface UsageContext {
+  readonly path: string;
+  readonly line: number;
+  readonly snippet: string;
+}
 export interface UsageMatch {
   readonly usage: Usage;
   readonly possible: boolean;
@@ -926,6 +971,7 @@ export declare function parseLocaleInfo(_: LocaleCode): LocaleInfo;
 export declare function pathId(_: readonly string[]): string;
 export declare function pathMatcher(_: readonly string[]): (_: string) => boolean;
 export declare function rangeContains(_: TextRange, _: number): boolean;
+export declare function renderPrompt(_: PromptData): string;
 export declare function replaceKeyPrefix(_: KeyString, _: KeyString, _: KeyString): KeyString;
 export declare function resolveConfig(_: ResolveConfigOptions): Promise<Setup>;
 export declare function sortTree(_: MessageTree, _: (_: string, _: string) => number): MessageTree;

@@ -182,3 +182,20 @@ describe('rename', () => {
     expect(files.get('src/a.ts')).toBe(`i18next.t('thing', { count })`)
   })
 })
+
+describe('prompts', () => {
+  it('builds a translate prompt with context, examples and paging', async () => {
+    const { project } = await createTestProject({
+      'package.json': json({ dependencies: { 'vue-i18n': '*' } }),
+      'src/locales/en.json': json({ a: 'Open {name}', b: 'Save', c: 'Close' }),
+      'src/locales/de.json': json({ c: 'Schließen' }),
+      'src/App.vue': '<template>\n  <button>{{ $t(\'a\', { name }) }}</button>\n</template>\n',
+    }, { glossary: [{ term: 'Open', translations: { de: 'Öffnen' } }] })
+    const data = project.prompt('translate', 'de', { limit: 1 })
+    expect(data).toMatchObject({ total: 2, remaining: 1, nextCursor: '1', examples: [{ key: 'c', target: 'Schließen' }] })
+    expect(data.items).toEqual([{ key: 'a', source: 'Open {name}', placeholders: ['{name}'], existing: undefined, context: [{ path: 'src/App.vue', line: 2, snippet: '<template>\n  <button>{{ $t(\'a\', { name }) }}</button>\n</template>' }] }])
+    expect(data.glossary).toEqual([{ term: 'Open', translation: 'Öffnen', note: undefined, doNotTranslate: false }])
+    expect(project.prompt('translate', 'de', { cursor: '1' }).items.map(i => i.key)).toEqual(['b'])
+    expect(project.prompt('review', 'de').items.map(i => i.key)).toEqual(['c'])
+  })
+})

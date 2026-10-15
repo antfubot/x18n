@@ -42,6 +42,7 @@ export function parseLocaleInfo(_) {}
 export function pathId(_) {}
 export function pathMatcher(_) {}
 export function rangeContains(_, _) {}
+export function renderPrompt(_) {}
 export function replaceKeyPrefix(_, _, _) {}
 export async function resolveConfig(_) {}
 export function sortTree(_, _) {}

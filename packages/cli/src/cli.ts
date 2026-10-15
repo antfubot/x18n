@@ -6,6 +6,7 @@ import { version } from '../package.json' with { type: 'json' }
 import { apply, fill, format, remove, rename, set } from './commands/change'
 import { check } from './commands/check'
 import { doctor, get, keys, locales, status, usages } from './commands/look'
+import { prompt } from './commands/prompt'
 import { eject, init, schema } from './commands/setup'
 import { errorInfo, exitCodeOf, printJson, stdinArg } from './context'
 
@@ -105,6 +106,17 @@ export function createCli(): CAC {
   cli.command('format', 'Re-write resources with the configured sort and indent')
     .option('--dry-run', 'Print the plan instead of writing')
     .action(run('format', format))
+
+  cli.command('prompt <kind>', 'Print a prompt for an agent or LLM: `prompt translate --to <locale>` or `prompt review --locale <locale>`')
+    .option('--to <locale>', 'Target locale (translate)')
+    .option('--locale <locale>', 'Locale to review')
+    .option('--keys <glob>', 'Only keys matching a glob')
+    .option('--namespace <ns>', 'Only keys of a namespace')
+    .option('--limit <n>', 'Messages per prompt (default 50)')
+    .option('--cursor <cursor>', 'Continue from `nextCursor`')
+    .option('--format <format>', 'markdown (default) or json')
+    .option('--no-context', 'Leave out code around usages')
+    .action(run('prompt', prompt))
 
   cli.command('init', 'Detect the setup and write x18n.config.ts')
     .option('--format <format>', 'ts (default), yml or json')

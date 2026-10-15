@@ -1,5 +1,6 @@
 import type { ErrorInfo } from '../errors'
 import type { CapabilityConflict } from '../plugins'
+import type { PromptData, PromptOptions } from '../project/prompt'
 import type { PresetExplanation } from '../resolve'
 import type { ResolvedConfig } from './config'
 import type { FileEvent } from './host'
@@ -168,6 +169,8 @@ export interface Project {
   readonly keySlots: (path: string) => readonly TextRange[]
   readonly hardStrings: (path?: string) => readonly (HardString & { readonly path: string })[]
   readonly analyze: () => Analysis
+  /** Parts of a translate or review prompt for an agent or LLM; render with `renderPrompt`. */
+  readonly prompt: (kind: 'translate' | 'review', locale: LocaleCode, options?: PromptOptions) => PromptData
   readonly explain: () => ProjectExplanation
   readonly localeInfo: (code: LocaleCode) => LocaleInfo
   readonly text: (path: string) => string | undefined

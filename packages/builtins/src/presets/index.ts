@@ -13,6 +13,7 @@ interface LibraryOptions {
   readonly templates?: readonly ExtractTemplate[]
   readonly finders?: readonly LocaleFinder[]
   readonly extra?: (draft: ConfigDraft) => void
+  readonly translatePrompt?: Plugin['translatePrompt']
 }
 
 /** One plugin holding a library's call specs, namespace rules, derived keys and extraction templates. */
@@ -36,6 +37,7 @@ function library(options: LibraryOptions): Plugin {
       options.extra?.(draft)
     },
     localeFinders: options.finders,
+    translatePrompt: options.translatePrompt,
     extractors: options.templates ? [{ id: options.name, templates: options.templates }] : undefined,
   }
 }
@@ -100,6 +102,9 @@ const i18nextPlugin = library({
     { callee: 'tr', types: ['TFunction'] },
   ],
   derivedKeys: ['{key}_*'],
+  translatePrompt: (draft, ctx) => {
+    draft.notes.push(`i18next plural keys end in _${ctx.localeInfo.pluralCategories.join(', _')} for ${ctx.targetLocale}; write one key per category.`)
+  },
   templates: [
     { template: 'i18next.t(\'{key}\'{args})', kinds: ['js-string', 'js-template'], imports: ['import i18next from \'i18next\''] },
   ],

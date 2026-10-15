@@ -13,6 +13,7 @@ import { extensionOf } from '../plugins'
 import { hashText, rangeContains } from '../text'
 import { createAnalyzer } from './analysis'
 import { createPlanner } from './planner'
+import { buildPrompt } from './prompt'
 import { createUsageResolver, derivedBase, prefixMatches, suppressedRanges } from './usages'
 
 export interface CreateProjectOptions {
@@ -665,6 +666,10 @@ export function createProject(options: CreateProjectOptions): Project {
     keySlots: path => files.get(path)?.result.keySlots ?? [],
     hardStrings: path => [...files].filter(([p]) => path === undefined || p === path).flatMap(([p, state]) => (state.result.hardStrings ?? []).map(h => ({ ...h, path: p }))),
     analyze: (): Analysis => analyzer.analyze(),
+    prompt: (kind, locale, promptOptions = {}) => buildPrompt(project, kind, locale, promptOptions, {
+      config,
+      hooks: registry.plugins.flatMap(plugin => plugin.translatePrompt ? [plugin.translatePrompt] : []),
+    }),
     explain,
     localeInfo,
     text: path => fileTexts.get(path) ?? files.get(path)?.text,
