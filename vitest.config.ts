@@ -1,13 +1,28 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 
+const src = (path: string): string => fileURLToPath(new URL(`./packages/${path}`, import.meta.url))
+
+// Tests run against sources; `test/exports.test.ts` checks the built packages.
+const alias = [
+  { find: /^@x18n\/core$/, replacement: src('core/src/index.ts') },
+  { find: /^@x18n\/builtins$/, replacement: src('builtins/src/index.ts') },
+  { find: /^@x18n\/builtins\/(.*)$/, replacement: src('builtins/src/$1/index.ts') },
+  { find: /^@x18n\/node$/, replacement: src('node/src/index.ts') },
+  { find: /^@x18n\/lsp$/, replacement: src('lsp/src/index.ts') },
+  { find: /^@x18n\/ui$/, replacement: src('ui/src/node/index.ts') },
+]
+
+const packages = ['builtins', 'cli', 'core', 'lsp', 'node']
+
 export default defineConfig({
+  resolve: { alias },
   test: {
     projects: [
-      'packages/builtins',
-      'packages/cli',
-      'packages/core',
-      'packages/lsp',
-      'packages/node',
+      ...packages.map(name => ({
+        extends: true as const,
+        test: { name, root: `./packages/${name}` },
+      })),
       {
         test: {
           name: 'exports',

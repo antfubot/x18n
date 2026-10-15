@@ -1,16 +1,26 @@
 export { defineConfig, definePlugin, definePreset } from './define'
+export { errorCodes, isX18nError, X18nError } from './errors'
+export type { ErrorCode, ErrorInfo } from './errors'
+export { globToRegExp, isKeyUnder, joinKey, keyMatcher, pathMatcher, replaceKeyPrefix, splitKey } from './keys'
+export { localeSpellingKey, parseLocaleInfo } from './locale'
 export { createMemoryHost } from './memory-host'
 export type { MemoryHost } from './memory-host'
-export { isMessageTree } from './message-tree'
-export type {
-  Format,
-  Host,
-  MessageLeaf,
-  MessageTree,
-  Plugin,
-  Preset,
-  ResourceSpec,
-  Severity,
-  UsageOptions,
-  UserConfig,
-} from './types'
+export { applyMessageOps, buildTree, isMessageLeaf, isMessageTree, pathId, sortTree, walkLeaves } from './message-tree'
+export type { TreeLeaf } from './message-tree'
+export { createOverlayHost } from './overlay-host'
+export type { OverlayHost } from './overlay-host'
+export { createRegistry, extensionOf, isPreset } from './plugins'
+export type { CapabilityConflict, PluginRegistry } from './plugins'
+export { createProject } from './project/project'
+export type { CreateProjectOptions } from './project/project'
+export { resolveConfig } from './resolve'
+export type { Builtins, PresetExplanation, ResolveConfigOptions, Setup } from './resolve'
+export { ConfigSchema, isJsonObject, PluginFileSchema, validate } from './schema'
+export type { PluginFile, SchemaIssue } from './schema'
+export { applyTextEdits, createLineIndex, diffText, hashText, rangeContains } from './text'
+export type { LineIndex, LinePosition } from './text'
+export type * from './types/config'
+export type * from './types/host'
+export type * from './types/model'
+export type * from './types/plugin'
+export type * from './types/project'

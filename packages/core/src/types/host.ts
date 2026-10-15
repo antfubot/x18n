@@ -1,0 +1,39 @@
+export interface Disposable {
+  readonly dispose: () => void
+}
+
+export interface GlobOptions {
+  readonly ignore?: readonly string[] | undefined
+  /** Honour the project's `.gitignore` files. */
+  readonly gitignore?: boolean | undefined
+}
+
+export interface FileEvent {
+  readonly type: 'create' | 'change' | 'delete'
+  /** Posix path relative to the host root. */
+  readonly path: string
+}
+
+/** Persistent key-value store. Values are JSON text. */
+export interface CacheStore {
+  readonly get: (key: string) => Promise<string | undefined>
+  readonly set: (key: string, value: string) => Promise<void>
+}
+
+export interface Logger {
+  readonly info: (message: string) => void
+  readonly warn: (message: string) => void
+  readonly error: (message: string) => void
+}
+
+/** Gives a project file access, globbing, watching and caching. All paths are posix and relative to `root`. */
+export interface Host {
+  readonly root: string
+  readonly readFile: (path: string) => Promise<string | undefined>
+  readonly writeFile: (path: string, content: string) => Promise<void>
+  readonly deleteFile: (path: string) => Promise<void>
+  readonly glob: (patterns: readonly string[], options?: GlobOptions) => Promise<string[]>
+  readonly watch?: ((patterns: readonly string[], onChange: (events: readonly FileEvent[]) => void) => Disposable) | undefined
+  readonly cache?: CacheStore | undefined
+  readonly logger?: Logger | undefined
+}

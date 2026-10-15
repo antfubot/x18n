@@ -1,0 +1,894 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`schemas > config schema 1`] = `
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+    },
+    "checks": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "enum": [
+              "error",
+              "warning",
+              "info",
+              "hint",
+              "off",
+            ],
+            "type": "string",
+          },
+          {
+            "items": [
+              {
+                "enum": [
+                  "error",
+                  "warning",
+                  "info",
+                  "hint",
+                  "off",
+                ],
+                "type": "string",
+              },
+              {
+                "type": "object",
+              },
+            ],
+            "minItems": 2,
+            "type": "array",
+          },
+        ],
+      },
+      "propertyNames": {
+        "type": "string",
+      },
+      "type": "object",
+    },
+    "extract": {
+      "additionalProperties": false,
+      "properties": {
+        "autoDetect": {
+          "type": "boolean",
+        },
+        "ignore": {
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "ignoreAttributes": {
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "ignoreByFile": {
+          "additionalProperties": {
+            "items": {
+              "type": "string",
+            },
+            "type": "array",
+          },
+          "propertyNames": {
+            "type": "string",
+          },
+          "type": "object",
+        },
+        "ignoreCallees": {
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "keyCase": {
+          "enum": [
+            "camel",
+            "snake",
+            "kebab",
+            "dot",
+          ],
+          "type": "string",
+        },
+        "keyMaxLength": {
+          "type": "number",
+        },
+        "keyPrefix": {
+          "type": "string",
+        },
+        "keygen": {
+          "enum": [
+            "slug",
+            "source",
+            "random",
+            "empty",
+          ],
+          "type": "string",
+        },
+        "reuseExisting": {
+          "type": "boolean",
+        },
+        "templates": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "files": {
+                    "items": {
+                      "type": "string",
+                    },
+                    "type": "array",
+                  },
+                  "imports": {
+                    "items": {
+                      "type": "string",
+                    },
+                    "type": "array",
+                  },
+                  "kinds": {
+                    "items": {
+                      "type": "string",
+                    },
+                    "type": "array",
+                  },
+                  "template": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "template",
+                ],
+                "type": "object",
+              },
+            ],
+          },
+          "type": "array",
+        },
+      },
+      "required": [],
+      "type": "object",
+    },
+    "formats": {
+      "additionalProperties": {
+        "type": "string",
+      },
+      "propertyNames": {
+        "type": "string",
+      },
+      "type": "object",
+    },
+    "glossary": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "doNotTranslate": {
+            "type": "boolean",
+          },
+          "note": {
+            "type": "string",
+          },
+          "term": {
+            "type": "string",
+          },
+          "translations": {
+            "additionalProperties": {
+              "type": "string",
+            },
+            "propertyNames": {
+              "type": "string",
+            },
+            "type": "object",
+          },
+        },
+        "required": [
+          "term",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+    "ignoreKeys": {
+      "items": {
+        "type": "string",
+      },
+      "type": "array",
+    },
+    "ignoreLocales": {
+      "items": {
+        "type": "string",
+      },
+      "type": "array",
+    },
+    "keyStyle": {
+      "enum": [
+        "auto",
+        "nested",
+        "flat",
+      ],
+      "type": "string",
+    },
+    "locales": {
+      "items": {
+        "type": "string",
+      },
+      "type": "array",
+    },
+    "name": {
+      "type": "string",
+    },
+    "namespace": {
+      "additionalProperties": false,
+      "properties": {
+        "default": {
+          "type": "string",
+        },
+        "separator": {
+          "type": "string",
+        },
+      },
+      "required": [],
+      "type": "object",
+    },
+    "plugins": {
+      "items": {
+        "anyOf": [
+          {
+            "type": "string",
+          },
+          {
+            "items": [
+              {
+                "type": "string",
+              },
+              {
+                "type": "object",
+              },
+            ],
+            "minItems": 2,
+            "type": "array",
+          },
+        ],
+      },
+      "type": "array",
+    },
+    "presets": {
+      "anyOf": [
+        {
+          "const": "auto",
+        },
+        {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+              },
+              {
+                "items": [
+                  {
+                    "type": "string",
+                  },
+                  {
+                    "type": "object",
+                  },
+                ],
+                "minItems": 2,
+                "type": "array",
+              },
+            ],
+          },
+          "type": "array",
+        },
+      ],
+    },
+    "projects": {
+      "items": {
+        "type": "string",
+      },
+      "type": "array",
+    },
+    "resources": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "execute": {
+            "type": "boolean",
+          },
+          "format": {
+            "type": "string",
+          },
+          "namespace": {
+            "type": "string",
+          },
+          "pattern": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "pattern",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+    "root": {
+      "type": "string",
+    },
+    "sourceLocale": {
+      "type": "string",
+    },
+    "strict": {
+      "type": "boolean",
+    },
+    "usage": {
+      "additionalProperties": false,
+      "properties": {
+        "calls": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "callee": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                  },
+                  {
+                    "items": {
+                      "type": "string",
+                    },
+                    "type": "array",
+                  },
+                ],
+              },
+              "factory": {
+                "type": "boolean",
+              },
+              "key": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "arg": {
+                        "type": "number",
+                      },
+                      "property": {
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "arg",
+                    ],
+                    "type": "object",
+                  },
+                ],
+              },
+              "keyPrefix": {
+                "additionalProperties": false,
+                "properties": {
+                  "arg": {
+                    "type": "number",
+                  },
+                  "property": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "arg",
+                ],
+                "type": "object",
+              },
+              "kind": {
+                "enum": [
+                  "call",
+                  "selector",
+                  "accessor",
+                ],
+                "type": "string",
+              },
+              "namespace": {
+                "additionalProperties": false,
+                "properties": {
+                  "arg": {
+                    "type": "number",
+                  },
+                  "property": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "arg",
+                ],
+                "type": "object",
+              },
+              "returns": {
+                "items": {
+                  "type": "string",
+                },
+                "type": "array",
+              },
+              "types": {
+                "items": {
+                  "type": "string",
+                },
+                "type": "array",
+              },
+            },
+            "required": [
+              "callee",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "derivedKeys": {
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "exclude": {
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "ignoreCallees": {
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "include": {
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "keysInUse": {
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "regex": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "extensions": {
+                "items": {
+                  "type": "string",
+                },
+                "type": "array",
+              },
+              "patterns": {
+                "items": {
+                  "type": "string",
+                },
+                "type": "array",
+              },
+            },
+            "required": [
+              "extensions",
+              "patterns",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+      },
+      "required": [],
+      "type": "object",
+    },
+    "write": {
+      "additionalProperties": false,
+      "properties": {
+        "indent": {
+          "anyOf": [
+            {
+              "type": "number",
+            },
+            {
+              "const": "tab",
+            },
+          ],
+        },
+        "keepFilled": {
+          "type": "boolean",
+        },
+        "sort": {
+          "anyOf": [
+            {
+              "const": false,
+            },
+            {
+              "enum": [
+                "binary",
+                "locale",
+              ],
+              "type": "string",
+            },
+          ],
+        },
+      },
+      "required": [],
+      "type": "object",
+    },
+  },
+  "required": [],
+  "title": "x18n config",
+  "type": "object",
+}
+`;
+
+exports[`schemas > plugin schema 1`] = `
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+    },
+    "config": {
+      "additionalProperties": false,
+      "properties": {
+        "keyStyle": {
+          "enum": [
+            "auto",
+            "nested",
+            "flat",
+          ],
+          "type": "string",
+        },
+        "locales": {
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "namespace": {
+          "additionalProperties": false,
+          "properties": {
+            "default": {
+              "type": "string",
+            },
+            "separator": {
+              "type": "string",
+            },
+          },
+          "required": [],
+          "type": "object",
+        },
+        "resources": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "execute": {
+                "type": "boolean",
+              },
+              "format": {
+                "type": "string",
+              },
+              "namespace": {
+                "type": "string",
+              },
+              "pattern": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "pattern",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "sourceLocale": {
+          "type": "string",
+        },
+      },
+      "required": [],
+      "type": "object",
+    },
+    "derivedKeys": {
+      "items": {
+        "type": "string",
+      },
+      "type": "array",
+    },
+    "detect": {
+      "additionalProperties": false,
+      "properties": {
+        "dependencies": {
+          "additionalProperties": false,
+          "properties": {
+            "all": {
+              "items": {
+                "type": "string",
+              },
+              "type": "array",
+            },
+            "any": {
+              "items": {
+                "type": "string",
+              },
+              "type": "array",
+            },
+          },
+          "required": [],
+          "type": "object",
+        },
+        "files": {
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+      },
+      "required": [],
+      "type": "object",
+    },
+    "exclusive": {
+      "type": "boolean",
+    },
+    "extract": {
+      "additionalProperties": false,
+      "properties": {
+        "templates": {
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "files": {
+                    "items": {
+                      "type": "string",
+                    },
+                    "type": "array",
+                  },
+                  "imports": {
+                    "items": {
+                      "type": "string",
+                    },
+                    "type": "array",
+                  },
+                  "kinds": {
+                    "items": {
+                      "type": "string",
+                    },
+                    "type": "array",
+                  },
+                  "template": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "template",
+                ],
+                "type": "object",
+              },
+            ],
+          },
+          "type": "array",
+        },
+      },
+      "required": [],
+      "type": "object",
+    },
+    "localeInfo": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "displayName": {
+            "type": "string",
+          },
+          "flag": {
+            "type": "string",
+          },
+        },
+        "required": [],
+        "type": "object",
+      },
+      "propertyNames": {
+        "type": "string",
+      },
+      "type": "object",
+    },
+    "name": {
+      "type": "string",
+    },
+    "normalizeKey": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "replace": {
+            "additionalProperties": false,
+            "properties": {
+              "pattern": {
+                "type": "string",
+              },
+              "with": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "pattern",
+              "with",
+            ],
+            "type": "object",
+          },
+        },
+        "required": [
+          "replace",
+        ],
+        "type": "object",
+      },
+      "type": "array",
+    },
+    "placeholders": {
+      "items": {
+        "type": "string",
+      },
+      "type": "array",
+    },
+    "scanners": {
+      "additionalProperties": false,
+      "properties": {
+        "calls": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "callee": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                  },
+                  {
+                    "items": {
+                      "type": "string",
+                    },
+                    "type": "array",
+                  },
+                ],
+              },
+              "factory": {
+                "type": "boolean",
+              },
+              "key": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "arg": {
+                        "type": "number",
+                      },
+                      "property": {
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "arg",
+                    ],
+                    "type": "object",
+                  },
+                ],
+              },
+              "keyPrefix": {
+                "additionalProperties": false,
+                "properties": {
+                  "arg": {
+                    "type": "number",
+                  },
+                  "property": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "arg",
+                ],
+                "type": "object",
+              },
+              "kind": {
+                "enum": [
+                  "call",
+                  "selector",
+                  "accessor",
+                ],
+                "type": "string",
+              },
+              "namespace": {
+                "additionalProperties": false,
+                "properties": {
+                  "arg": {
+                    "type": "number",
+                  },
+                  "property": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "arg",
+                ],
+                "type": "object",
+              },
+              "returns": {
+                "items": {
+                  "type": "string",
+                },
+                "type": "array",
+              },
+              "types": {
+                "items": {
+                  "type": "string",
+                },
+                "type": "array",
+              },
+            },
+            "required": [
+              "callee",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "regex": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "extensions": {
+                "items": {
+                  "type": "string",
+                },
+                "type": "array",
+              },
+              "patterns": {
+                "items": {
+                  "type": "string",
+                },
+                "type": "array",
+              },
+            },
+            "required": [
+              "extensions",
+              "patterns",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+      },
+      "required": [],
+      "type": "object",
+    },
+    "scopes": {
+      "additionalProperties": false,
+      "properties": {
+        "regex": {
+          "type": "string",
+        },
+      },
+      "required": [
+        "regex",
+      ],
+      "type": "object",
+    },
+  },
+  "required": [
+    "name",
+  ],
+  "type": "object",
+}
+`;

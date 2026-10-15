@@ -1,0 +1,677 @@
+import type { Setup } from '../resolve'
+import type { FileEvent, Host } from '../types/host'
+import type { KeyString, LocaleCode, LocaleInfo, Message, MessageTree, NodeRange, Resource, TextRange, Usage } from '../types/model'
+import type { HardString, ScanResult, SourceFile } from '../types/plugin'
+import type { Analysis, KeyInfo, KeyTarget, Project, ProjectChange, ProjectExplanation, UsageMatch } from '../types/project'
+import type { ResourceState } from './analysis'
+import type { UsageResolver } from './usages'
+import { isX18nError, X18nError } from '../errors'
+import { isKeyUnder, joinKey, keyMatcher, pathMatcher } from '../keys'
+import { parseLocaleInfo } from '../locale'
+import { isMessageLeaf, isMessageTree, pathId } from '../message-tree'
+import { extensionOf } from '../plugins'
+import { hashText, rangeContains } from '../text'
+import { createAnalyzer } from './analysis'
+import { createPlanner } from './planner'
+import { createUsageResolver, derivedBase, prefixMatches, suppressedRanges } from './usages'
+
+export interface CreateProjectOptions {
+  readonly host: Host
+  readonly setup: Setup
+  /** Scans many files at once, for example on worker threads. Default: in-process. */
+  readonly scanFiles?: ((files: readonly SourceFile[]) => Promise<readonly ScanResult[]>) | undefined
+}
+
+interface FileState {
+  readonly hash: string
+  readonly text: string
+  readonly result: ScanResult
+  readonly error: X18nError | undefined
+}
+
+interface Candidate {
+  readonly path: string
+  readonly locale: LocaleCode
+  readonly namespace: string | undefined
+  readonly format: string | undefined
+  readonly block: Resource['block']
+  readonly readonly: boolean
+  readonly finder: string
+}
+
+const scanConcurrency = 64
+
+export function createProject(options: CreateProjectOptions): Project {
+  const { host, setup } = options
+  const { config, registry } = setup
+  const listeners = new Set<(change: ProjectChange) => void>()
+  const fileTexts = new Map<string, string>()
+  const resourceStates = new Map<string, ResourceState>()
+  const files = new Map<string, FileState>()
+  const discoveryErrors: { error: X18nError, path: string }[] = []
+  let duplicates: { path: string, finder: string, keptFrom: string }[] = []
+  let finderResults: { id: string, resources: string[] }[] = []
+  let revision = 0
+  let namespaced = false
+  let locales: LocaleCode[] = []
+  let sourceLocale: LocaleCode = config.sourceLocale
+  let resolver: UsageResolver
+  let watcher: { dispose: () => void } | undefined
+  let usageEligible: (path: string) => boolean = () => false
+
+  const normalizers = registry.plugins.flatMap(plugin => plugin.normalizeKey ? [plugin.normalizeKey] : [])
+  const transforms = registry.plugins.flatMap(plugin => plugin.transformResource ? [plugin.transformResource] : [])
+  const localeInfoHooks = registry.plugins.flatMap(plugin => plugin.localeInfo ? [plugin.localeInfo] : [])
+  const baseOf = derivedBase(config.usage.derivedKeys)
+  const scanSignature = hashText(JSON.stringify({ usage: config.usage, namespace: config.namespace, scanners: registry.scanners.map(s => s.id), v: 1 }))
+  const localeFilter = (code: LocaleCode): boolean =>
+    (!config.locales || config.locales.includes(code)) && !config.ignoreLocales.includes(code)
+
+  const infoCache = new Map<LocaleCode, LocaleInfo>()
+  function localeInfo(code: LocaleCode): LocaleInfo {
+    let info = infoCache.get(code)
+    if (!info) {
+      info = parseLocaleInfo(code)
+      for (const hook of localeInfoHooks) {
+        const result = hook(code)
+        if (result) {
+          info = { ...info, ...result, code }
+          break
+        }
+      }
+      infoCache.set(code, info)
+    }
+    return info
+  }
+
+  // ---- Discovery and parse ----
+
+  async function discover(): Promise<Candidate[]> {
+    const ctx = { host, config, extensions: [...new Set(registry.formats.flatMap(format => format.extensions))] }
+    const seen = new Map<string, string>()
+    const out: Candidate[] = []
+    duplicates = []
+    finderResults = []
+    for (const finder of registry.finders) {
+      const found = await finder.find(ctx)
+      const kept: string[] = []
+      for (const candidate of found) {
+        const id = candidate.block ? `${candidate.path}#${candidate.block.index}` : candidate.path
+        const previous = seen.get(id)
+        if (previous) {
+          duplicates.push({ path: id, finder: finder.id, keptFrom: previous })
+          continue
+        }
+        seen.set(id, finder.id)
+        if (!localeFilter(candidate.locale))
+          continue
+        kept.push(id)
+        out.push({
+          path: candidate.path,
+          locale: candidate.locale,
+          namespace: candidate.namespace,
+          format: candidate.format,
+          block: candidate.block,
+          readonly: candidate.readonly === true,
+          finder: finder.id,
+        })
+      }
+      finderResults.push({ id: finder.id, resources: kept })
+    }
+    return out
+  }
+
+  function keyFor(resource: Resource, stored: readonly string[]): KeyString {
+    const logical = stored.flatMap(segment => segment.split('.'))
+    if (namespaced)
+      return joinKey(resource.namespace ?? config.namespace.default, logical)
+    const prefix = resource.namespace ? resource.namespace.split('.') : []
+    return joinKey(undefined, [...prefix, ...logical])
+  }
+
+  function parseResource(candidate: Candidate, text: string): ResourceState {
+    const format = registry.formatFor(candidate.path, candidate.format)
+    const id = candidate.block ? `${candidate.path}#${candidate.block.index}` : candidate.path
+    const resource: Resource = {
+      id,
+      path: candidate.path,
+      locale: candidate.locale,
+      namespace: candidate.namespace,
+      format: format?.id ?? 'unknown',
+      block: candidate.block,
+      readonly: candidate.readonly || !format || (!format.edit && !format.serialize),
+      finder: candidate.finder,
+    }
+    const content = candidate.block ? text.slice(candidate.block.range.start, candidate.block.range.end) : text
+    const offset = candidate.block?.range.start ?? 0
+    const base = { resource, hash: hashText(content), content, offset }
+    if (!format)
+      return { ...base, tree: {}, ranges: new Map(), error: new X18nError('X18N2001', candidate.path) }
+    const ctx = { path: candidate.path, locale: candidate.locale, namespace: candidate.namespace, indent: config.write.indent }
+    try {
+      const parsed = format.parse(content, ctx)
+      let tree: MessageTree = parsed.tree
+      for (const transform of transforms)
+        tree = transform.read(tree, ctx)
+      if (!isMessageTree(tree))
+        throw new X18nError('X18N2003', candidate.path)
+      return { ...base, tree, ranges: parsed.ranges ?? new Map(), error: undefined }
+    }
+    catch (error) {
+      const coded = isX18nError(error) ? error : new X18nError('X18N2002', `${candidate.path}: ${error instanceof Error ? error.message : String(error)}`)
+      return { ...base, tree: {}, ranges: new Map(), error: coded }
+    }
+  }
+
+  async function loadResources(candidates: readonly Candidate[], reread: ReadonlySet<string> | 'all'): Promise<void> {
+    const next = new Map<string, ResourceState>()
+    const paths = [...new Set(candidates.map(c => c.path))]
+    await Promise.all(paths.map(async (path) => {
+      if (reread === 'all' || reread.has(path) || !fileTexts.has(path)) {
+        const text = await host.readFile(path)
+        if (text === undefined)
+          fileTexts.delete(path)
+        else
+          fileTexts.set(path, text)
+      }
+    }))
+    namespaced = config.namespace.separator !== '.' && candidates.some(c => c.namespace !== undefined)
+    for (const candidate of candidates) {
+      const text = fileTexts.get(candidate.path)
+      if (text === undefined)
+        continue
+      const id = candidate.block ? `${candidate.path}#${candidate.block.index}` : candidate.path
+      const previous = resourceStates.get(id)
+      const content = candidate.block ? text.slice(candidate.block.range.start, candidate.block.range.end) : text
+      if (previous && previous.hash === hashText(content) && previous.resource.locale === candidate.locale && previous.resource.namespace === candidate.namespace && previous.offset === (candidate.block?.range.start ?? 0))
+        next.set(id, previous)
+      else
+        next.set(id, parseResource(candidate, text))
+    }
+    resourceStates.clear()
+    for (const [id, state] of next)
+      resourceStates.set(id, state)
+
+    const found = [...new Set([...resourceStates.values()].map(state => state.resource.locale))]
+    sourceLocale = config.sourceLocale
+    if (!found.includes(sourceLocale) && config.origins.sourceLocale === undefined && found.length > 0)
+      sourceLocale = found.find(code => code.toLowerCase().startsWith('en')) ?? [...found].sort()[0]!
+    locales = [sourceLocale, ...found.filter(code => code !== sourceLocale).sort()]
+    if (!found.includes(sourceLocale) && found.length === 0)
+      locales = [sourceLocale]
+    resolver = createUsageResolver(config, namespaced, normalizers)
+  }
+
+  // ---- Scanning ----
+
+  async function scanOne(file: SourceFile): Promise<ScanResult> {
+    const usages: ScanResult['usages'][number][] = []
+    const scopes: NonNullable<ScanResult['scopes']>[number][] = []
+    const keySlots: TextRange[] = []
+    const hardStrings: HardString[] = []
+    const calls = config.usage.calls.filter(spec => ![spec.callee].flat().some(name => config.usage.ignoreCallees.includes(name)))
+    for (const scanner of registry.scannersFor(file.path)) {
+      const result = await scanner.scan(file, { config, calls })
+      usages.push(...result.usages)
+      scopes.push(...result.scopes ?? [])
+      keySlots.push(...result.keySlots ?? [])
+      hardStrings.push(...result.hardStrings ?? [])
+    }
+    const suppressed = suppressedRanges(file.text)
+    const seen = new Set<string>()
+    const kept = usages.filter((usage) => {
+      const id = `${usage.range.start}:${usage.range.end}`
+      if (seen.has(id))
+        return false
+      seen.add(id)
+      return !suppressed.some(range => usage.range.start >= range.start && usage.range.end <= range.end)
+    })
+    return { usages: kept, scopes, keySlots, hardStrings }
+  }
+
+  async function scanPaths(paths: readonly string[]): Promise<void> {
+    const pending: SourceFile[] = []
+    const cacheKeys = new Map<string, string>()
+    await Promise.all(paths.map(async (path) => {
+      const text = await host.readFile(path)
+      if (text === undefined) {
+        files.delete(path)
+        return
+      }
+      const hash = hashText(text)
+      const previous = files.get(path)
+      if (previous?.hash === hash)
+        return
+      if (host.cache) {
+        const cacheKey = `scan:${scanSignature}:${path}:${hash}`
+        cacheKeys.set(path, cacheKey)
+        const cached = await host.cache.get(cacheKey)
+        if (cached !== undefined) {
+          files.set(path, { hash, text, result: JSON.parse(cached) as ScanResult, error: undefined }) // written by this function below
+          return
+        }
+      }
+      pending.push({ path, text, extension: extensionOf(path) })
+    }))
+
+    const store = (file: SourceFile, result: ScanResult | undefined, error?: X18nError): void => {
+      files.set(file.path, { hash: hashText(file.text), text: file.text, result: result ?? { usages: [] }, error })
+      const cacheKey = cacheKeys.get(file.path)
+      if (result && cacheKey && host.cache)
+        void host.cache.set(cacheKey, JSON.stringify(result))
+    }
+
+    if (options.scanFiles && pending.length > scanConcurrency) {
+      const results = await options.scanFiles(pending)
+      pending.forEach((file, index) => store(file, results[index]))
+      return
+    }
+    for (let i = 0; i < pending.length; i += scanConcurrency) {
+      await Promise.all(pending.slice(i, i + scanConcurrency).map(async (file) => {
+        try {
+          store(file, await scanOne(file))
+        }
+        catch (error) {
+          store(file, undefined, new X18nError('X18N3001', `${file.path}: ${error instanceof Error ? error.message : String(error)}`))
+        }
+      }))
+    }
+  }
+
+  async function scanAll(): Promise<void> {
+    if (registry.scanners.length === 0)
+      return
+    const include = pathMatcher(config.usage.include)
+    const exclude = pathMatcher(config.usage.exclude)
+    usageEligible = path => registry.scannersFor(path).length > 0 && include(path) && !exclude(path)
+    const paths = (await host.glob(config.usage.include, { ignore: config.usage.exclude, gitignore: true }))
+      .filter(path => registry.scannersFor(path).length > 0)
+    await scanPaths(paths)
+  }
+
+  // ---- Indexes (rebuilt lazily per revision) ----
+
+  interface Index {
+    readonly revision: number
+    readonly messages: Map<KeyString, Map<LocaleCode, Message[]>>
+    readonly keyPaths: Map<KeyString, { namespace: string | undefined, path: string[] }>
+    readonly nodes: Map<string, { key: KeyString, range: NodeRange, leaf: boolean }[]>
+    readonly parents: Set<KeyString>
+    readonly usages: Usage[]
+    readonly usagesByKey: Map<KeyString, Usage[]>
+    readonly prefixUsages: Usage[]
+    readonly derived: Map<KeyString, KeyString[]>
+  }
+  let index: Index | undefined
+
+  function buildIndex(): Index {
+    const messages = new Map<KeyString, Map<LocaleCode, Message[]>>()
+    const keyPaths = new Map<KeyString, { namespace: string | undefined, path: string[] }>()
+    const nodes = new Map<string, { key: KeyString, range: NodeRange, leaf: boolean }[]>()
+    const parents = new Set<KeyString>()
+    for (const state of resourceStates.values()) {
+      const { resource } = state
+      const fileNodes = nodes.get(resource.path) ?? []
+      nodes.set(resource.path, fileNodes)
+      const shift = (range: TextRange): TextRange => ({ start: range.start + state.offset, end: range.end + state.offset })
+      const visit = (tree: MessageTree, stored: string[]): void => {
+        for (const [segment, child] of Object.entries(tree)) {
+          const path = [...stored, segment]
+          const key = keyFor(resource, path)
+          const raw = state.ranges.get(pathId(path))
+          const range = raw ? { key: shift(raw.key), value: shift(raw.value) } : undefined
+          if (range)
+            fileNodes.push({ key, range, leaf: isMessageLeaf(child) })
+          if (isMessageLeaf(child)) {
+            const byLocale = messages.get(key) ?? new Map<LocaleCode, Message[]>()
+            messages.set(key, byLocale)
+            const list = byLocale.get(resource.locale) ?? []
+            byLocale.set(resource.locale, list)
+            list.push({ key, locale: resource.locale, value: child, resource: resource.id, storedPath: path, range })
+            if (!keyPaths.has(key)) {
+              const logical = path.flatMap(s => s.split('.'))
+              keyPaths.set(key, namespaced
+                ? { namespace: resource.namespace ?? config.namespace.default, path: logical }
+                : { namespace: undefined, path: [...resource.namespace ? resource.namespace.split('.') : [], ...logical] })
+            }
+          }
+          else {
+            parents.add(key)
+            visit(child, path)
+          }
+        }
+      }
+      visit(state.tree, [])
+    }
+    // Parent keys of every leaf, so `t('a')` on an object is known.
+    for (const [key, { namespace, path }] of keyPaths) {
+      for (let i = 1; i < path.length; i++)
+        parents.add(joinKey(namespace, path.slice(0, i)))
+      void key
+    }
+
+    const usages: Usage[] = []
+    for (const [path, state] of files) {
+      for (const candidate of state.result.usages)
+        usages.push(resolver.resolve(candidate, state.result.scopes ?? [], path, 'scanner'))
+    }
+    const usagesByKey = new Map<KeyString, Usage[]>()
+    const prefixUsages: Usage[] = []
+    for (const usage of usages) {
+      if (usage.key === undefined)
+        continue
+      if (usage.dynamic === 'prefix') {
+        prefixUsages.push(usage)
+        continue
+      }
+      const list = usagesByKey.get(usage.key) ?? []
+      usagesByKey.set(usage.key, list)
+      list.push(usage)
+    }
+    const derived = new Map<KeyString, KeyString[]>()
+    if (config.usage.derivedKeys.length > 0) {
+      for (const key of messages.keys()) {
+        const base = baseOf(key)
+        if (base) {
+          const list = derived.get(base) ?? []
+          derived.set(base, list)
+          list.push(key)
+        }
+      }
+    }
+    return { revision, messages, keyPaths, nodes, parents, usages, usagesByKey, prefixUsages, derived }
+  }
+
+  function idx(): Index {
+    if (!index || index.revision !== revision)
+      index = buildIndex()
+    return index
+  }
+
+  function message(key: KeyString, locale: LocaleCode): Message | undefined {
+    return idx().messages.get(key)?.get(locale)?.[0]
+  }
+
+  function usageMatches(query: { key?: KeyString | undefined, prefix?: KeyString | undefined, path?: string | undefined } = {}): UsageMatch[] {
+    const { usages, usagesByKey, prefixUsages } = idx()
+    const inPath = (usage: Usage): boolean => query.path === undefined || usage.path === query.path
+    if (query.key !== undefined) {
+      const key = query.key
+      const base = baseOf(key)
+      const direct = [...usagesByKey.get(key) ?? [], ...base ? usagesByKey.get(base) ?? [] : []]
+      return [
+        ...direct.filter(inPath).map(usage => ({ usage, possible: false })),
+        ...prefixUsages.filter(usage => inPath(usage) && prefixMatches(usage, key)).map(usage => ({ usage, possible: true })),
+      ]
+    }
+    if (query.prefix !== undefined) {
+      const prefix = query.prefix
+      return [
+        ...usages.filter(usage => inPath(usage) && usage.dynamic === false && usage.key !== undefined && isKeyUnder(usage.key, prefix)).map(usage => ({ usage, possible: false })),
+        ...prefixUsages.filter(usage => inPath(usage) && usage.key !== undefined && (usage.key.startsWith(prefix) || prefix.startsWith(usage.key))).map(usage => ({ usage, possible: true })),
+      ]
+    }
+    return usages.filter(inPath).map(usage => ({ usage, possible: usage.dynamic !== false }))
+  }
+
+  const analyzer = createAnalyzer({
+    config,
+    registry,
+    state: () => ({
+      revision,
+      sourceLocale,
+      locales,
+      resources: [...resourceStates.values()],
+      resourceErrors: [...resourceStates.values()].flatMap(s => s.error ? [{ error: s.error, path: s.resource.path }] : []),
+      scanErrors: [...files].flatMap(([path, s]) => s.error ? [{ error: s.error, path }] : []),
+      discoveryErrors,
+      messages: idx().messages,
+      parents: idx().parents,
+      usages: idx().usages,
+      usagesByKey: idx().usagesByKey,
+      prefixUsages: idx().prefixUsages,
+      derived: idx().derived,
+      files,
+    }),
+    baseOf,
+    localeInfo,
+    text: path => fileTexts.get(path) ?? files.get(path)?.text,
+  })
+
+  function keys(query: Parameters<Project['keys']>[0] = {}): KeyString[] {
+    const { messages, keyPaths } = idx()
+    const match = query.glob ? keyMatcher([query.glob]) : undefined
+    let list = [...messages.keys()]
+    if (match)
+      list = list.filter(key => match(key))
+    if (query.namespace !== undefined)
+      list = list.filter(key => keyPaths.get(key)?.namespace === query.namespace)
+    if (query.missing !== undefined) {
+      const locale = query.missing
+      list = list.filter((key) => {
+        const value = message(key, locale)?.value
+        return message(key, sourceLocale) !== undefined && (value === undefined || value === '')
+      })
+    }
+    if (query.unused) {
+      const unused = new Set(analyzer.analyze().unused)
+      list = list.filter(key => unused.has(key))
+    }
+    return list.sort()
+  }
+
+  function get(key: KeyString): KeyInfo | undefined {
+    const { messages, keyPaths } = idx()
+    const byLocale = messages.get(key)
+    if (!byLocale)
+      return undefined
+    const id = keyPaths.get(key)!
+    const list = locales.flatMap(locale => byLocale.get(locale)?.slice(0, 1) ?? [])
+    return {
+      key,
+      namespace: id.namespace,
+      path: id.path,
+      messages: list,
+      missing: locales.filter(locale => !byLocale.has(locale)),
+      usages: usageMatches({ key }),
+      diagnostics: analyzer.analyze().diagnostics.filter(d => d.key === key),
+    }
+  }
+
+  function keyAt(path: string, offset: number): KeyTarget | undefined {
+    const fileNodes = idx().nodes.get(path)
+    if (fileNodes) {
+      let best: { key: KeyString, range: NodeRange, leaf: boolean } | undefined
+      for (const node of fileNodes) {
+        const hit = rangeContains(node.range.key, offset) || (node.leaf && rangeContains(node.range.value, offset))
+        if (hit && (!best || node.range.key.start > best.range.key.start))
+          best = node
+      }
+      if (best) {
+        return best.leaf
+          ? { type: 'key', key: best.key, range: best.range.key, source: 'resource' }
+          : { type: 'subtree', key: best.key, range: best.range.key, source: 'resource' }
+      }
+    }
+    const state = files.get(path)
+    if (state) {
+      const usage = idx().usages.find(u => u.path === path && u.key !== undefined && rangeContains(u.range, offset))
+      if (usage?.key !== undefined)
+        return { type: 'key', key: usage.key, range: usage.range, source: 'usage', usage }
+    }
+    return undefined
+  }
+
+  function explain(): ProjectExplanation {
+    const resources = [...resourceStates.values()]
+    return {
+      name: config.name,
+      root: host.root,
+      presets: setup.presets,
+      plugins: registry.plugins.map(plugin => plugin.name),
+      skipped: setup.skipped,
+      finders: finderResults,
+      duplicates,
+      formats: registry.formats.map(format => ({
+        id: format.id,
+        extensions: format.extensions,
+        resources: resources.filter(state => state.resource.format === format.id).length,
+      })),
+      scanners: registry.scanners.map(scanner => ({
+        id: scanner.id,
+        extensions: scanner.extensions,
+        files: [...files.keys()].filter(path => registry.scannersFor(path).includes(scanner)).length,
+      })),
+      conflicts: registry.conflicts,
+      errors: [
+        ...discoveryErrors,
+        ...resources.flatMap(state => state.error ? [{ error: state.error, path: state.resource.path }] : []),
+        ...[...files].flatMap(([path, state]) => state.error ? [{ error: state.error, path }] : []),
+      ].map(({ error, path }) => ({ ...error.toJSON(), path })),
+      config,
+    }
+  }
+
+  function emit(change: ProjectChange): void {
+    for (const listener of listeners)
+      listener(change)
+  }
+
+  function touchedKeys(paths: ReadonlySet<string>, before: Index | undefined): KeyString[] {
+    const out = new Set<KeyString>()
+    const collect = (from: Index | undefined): void => {
+      if (!from)
+        return
+      for (const path of paths) {
+        for (const node of from.nodes.get(path) ?? [])
+          out.add(node.key)
+      }
+      for (const usage of from.usages) {
+        if (usage.key !== undefined && paths.has(usage.path))
+          out.add(usage.key)
+      }
+    }
+    collect(before)
+    collect(idx())
+    return [...out]
+  }
+
+  let current = Promise.resolve()
+  async function update(events: readonly FileEvent[]): Promise<ProjectChange | undefined> {
+    const run = current.then(async () => {
+      if (events.length === 0)
+        return undefined
+      const before = idx()
+      const paths = new Set(events.map(event => event.path))
+      const resourcePaths = new Set([...resourceStates.values()].map(state => state.resource.path))
+      const structural = events.some(event => event.type !== 'change') || events.some(event => !resourcePaths.has(event.path) && registry.formatFor(event.path) !== undefined)
+      const touchesResources = structural || [...paths].some(path => resourcePaths.has(path))
+      if (touchesResources) {
+        const candidates = structural ? await discover() : [...resourceStates.values()].map(state => ({ ...state.resource, format: state.resource.format === 'unknown' ? undefined : state.resource.format }))
+        await loadResources(candidates, paths)
+      }
+      const scanTargets = [...paths].filter(path => usageEligible(path) || files.has(path))
+      for (const event of events) {
+        if (event.type === 'delete')
+          files.delete(event.path)
+      }
+      await scanPaths(scanTargets.filter(path => events.some(event => event.path === path && event.type !== 'delete')))
+      revision++
+      const change: ProjectChange = { revision, paths: [...paths], keys: touchedKeys(paths, before) }
+      emit(change)
+      return change
+    })
+    current = run.then(() => undefined, () => undefined)
+    return run
+  }
+
+  const planner = createPlanner({
+    host,
+    config,
+    registry,
+    state: () => ({ revision, sourceLocale, locales, namespaced, resources: [...resourceStates.values()], fileTexts }),
+    message: (key, locale) => message(key, locale),
+    messages: key => idx().messages.get(key),
+    allKeys: () => [...idx().messages.keys()],
+    parents: () => idx().parents,
+    usageMatches,
+    text: path => fileTexts.get(path) ?? files.get(path)?.text,
+    baseOf,
+    update,
+  })
+
+  const ready = (async () => {
+    const candidates = await discover()
+    await loadResources(candidates, 'all')
+    await scanAll()
+    revision++
+  })()
+
+  const project: Project = {
+    get name() {
+      return config.name
+    },
+    config,
+    ready,
+    get revision() {
+      return revision
+    },
+    get locales() {
+      return locales
+    },
+    get sourceLocale() {
+      return sourceLocale
+    },
+    get resources() {
+      return [...resourceStates.values()].map(state => state.resource)
+    },
+    get namespaced() {
+      return namespaced
+    },
+    reporters: registry.reporters,
+    placeholderSyntaxes: registry.placeholders,
+    keys,
+    get,
+    message,
+    parseKey(input) {
+      const separator = config.namespace.separator
+      if (!namespaced)
+        return input
+      const index = input.indexOf(':')
+      if (index > 0)
+        return input
+      const custom = separator !== ':' ? input.indexOf(separator) : -1
+      if (custom > 0)
+        return `${input.slice(0, custom)}:${input.slice(custom + separator.length)}`
+      return config.namespace.default ? `${config.namespace.default}:${input}` : input
+    },
+    usages: usageMatches,
+    keyAt,
+    keySlots: path => files.get(path)?.result.keySlots ?? [],
+    hardStrings: path => [...files].filter(([p]) => path === undefined || p === path).flatMap(([p, state]) => (state.result.hardStrings ?? []).map(h => ({ ...h, path: p }))),
+    analyze: (): Analysis => analyzer.analyze(),
+    explain,
+    localeInfo,
+    text: path => fileTexts.get(path) ?? files.get(path)?.text,
+    owns: path => fileTexts.has(path) || files.has(path) || usageEligible(path),
+    plan: ops => planner.plan(ops),
+    apply: (plan, applyOptions) => planner.apply(plan, applyOptions?.answers ?? {}),
+    update,
+    watch() {
+      if (watcher || !host.watch)
+        return
+      watcher = host.watch(['**/*'], (events) => {
+        void update(events)
+      })
+    },
+    onChange(listener) {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    dispose() {
+      watcher?.dispose()
+      listeners.clear()
+    },
+  }
+  return project
+}

@@ -94,9 +94,14 @@ catalogs:
     typescript: ^6.0.3
     vite: ^8.3.1
   deps:
+    '@valibot/to-json-schema': ^1.8.0
     cac: ^7.1.0
     devframe: ^1.2.5
+    json5: ^2.2.3
+    jsonc-parser: ^3.3.1
+    valibot: ^1.5.0
     vscode-languageserver: ^10.1.2
+    yaml: ^2.9.1
   docs:
     comark-docs: github:comarkdown/comark-docs#f97dc864b0aa702d54c600f868589b7a2c185b3a
     satori: ^0.35.0

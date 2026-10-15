@@ -19,3 +19,4 @@ temp
 *.vsix
 packages/vscode/src/generated
 packages/vscode/.vsce
+packages/core/schema

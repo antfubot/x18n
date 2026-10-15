@@ -1,40 +1,75 @@
-import { describe, expect, expectTypeOf, it } from 'vitest'
-import { createMemoryHost, definePlugin, definePreset, isMessageTree } from '../src'
+import { describe, expect, it } from 'vitest'
+import { applyTextEdits, createLineIndex, createMemoryHost, diffText, globToRegExp, isKeyUnder, isMessageTree, joinKey, keyMatcher, parseLocaleInfo, splitKey } from '../src'
 
-describe('isMessageTree', () => {
-  it('accepts nested objects of leaves', () => {
-    expect(isMessageTree({ a: 'x', b: { c: 1, d: null, e: true } })).toBe(true)
+describe('keys', () => {
+  it('joins and splits keys with namespaces', () => {
+    expect(joinKey('common', ['a', 'b'])).toBe('common:a.b')
+    expect(joinKey(undefined, ['a', 'b'])).toBe('a.b')
+    expect(splitKey('common:a.b')).toEqual({ namespace: 'common', path: ['a', 'b'] })
+    expect(splitKey('Note: x', false)).toEqual({ namespace: undefined, path: ['Note: x'] })
   })
 
-  it('rejects arrays, non-objects and nested arrays', () => {
+  it('knows subtrees', () => {
+    expect(isKeyUnder('pages.home', 'pages')).toBe(true)
+    expect(isKeyUnder('pagesX', 'pages')).toBe(false)
+    expect(isKeyUnder('ns:a', 'ns:')).toBe(true)
+  })
+
+  it('matches key globs per segment', () => {
+    const match = keyMatcher(['pages.*', 'deep.**'])
+    expect(match('pages.home')).toBe(true)
+    expect(match('pages.home.title')).toBe(false)
+    expect(match('deep.a.b.c')).toBe(true)
+  })
+
+  it('matches path globs', () => {
+    expect(globToRegExp('**/*.{ts,vue}').test('src/a/b.vue')).toBe(true)
+    expect(globToRegExp('**/*.{ts,vue}').test('b.ts')).toBe(true)
+    expect(globToRegExp('src/*.ts').test('src/a/b.ts')).toBe(false)
+  })
+})
+
+describe('text', () => {
+  it('diffs to one minimal edit', () => {
+    const before = '{\n  "a": "x",\n  "b": "y"\n}\n'
+    const after = '{\n  "a": "z",\n  "b": "y"\n}\n'
+    const edits = diffText(before, after)
+    expect(edits).toEqual([{ range: { start: 10, end: 11 }, text: 'z' }])
+    expect(applyTextEdits(before, edits)).toBe(after)
+  })
+
+  it('maps offsets to lines', () => {
+    const index = createLineIndex('ab\ncd\n')
+    expect(index.position(4)).toEqual({ line: 1, character: 1 })
+    expect(index.offset({ line: 1, character: 1 })).toBe(4)
+    expect(index.line(1)).toBe('cd')
+  })
+})
+
+describe('locale info', () => {
+  it('parses codes leniently without changing them', () => {
+    expect(parseLocaleInfo('pt-BR')).toMatchObject({ code: 'pt-BR', language: 'pt', region: 'BR', displayName: 'Brazilian Portuguese' })
+    expect(parseLocaleInfo('de').flag).toBe('🇩🇪')
+    expect(parseLocaleInfo('ru').pluralCategories).toEqual(['one', 'few', 'many', 'other'])
+    expect(parseLocaleInfo('not a code')).toMatchObject({ code: 'not a code', language: undefined })
+  })
+})
+
+describe('isMessageTree', () => {
+  it('accepts nested objects of leaves only', () => {
+    expect(isMessageTree({ a: 'x', b: { c: 1, d: null, e: true } })).toBe(true)
     expect(isMessageTree(['a'])).toBe(false)
-    expect(isMessageTree('a')).toBe(false)
-    expect(isMessageTree(null)).toBe(false)
     expect(isMessageTree({ a: ['x'] })).toBe(false)
   })
 })
 
 describe('createMemoryHost', () => {
-  it('reads what it was given and what was written', async () => {
-    const host = createMemoryHost({ 'en.json': '{}' })
+  it('reads, writes, deletes and globs', async () => {
+    const host = createMemoryHost({ 'en.json': '{}', 'src/a.ts': '' })
     await host.writeFile('de.json', '{"a":"b"}')
-    expect(await host.readFile('en.json')).toBe('{}')
     expect(await host.readFile('de.json')).toBe('{"a":"b"}')
-    expect(await host.readFile('fr.json')).toBeUndefined()
-  })
-})
-
-describe('definePlugin', () => {
-  it('keeps literal types', () => {
-    const plugin = definePlugin({ name: 'acme' })
-    expectTypeOf(plugin.name).toEqualTypeOf<'acme'>()
-  })
-})
-
-describe('definePreset', () => {
-  it('keeps literal names of nested plugins', () => {
-    const preset = definePreset({ name: 'acme', plugins: [definePlugin({ name: 'acme-format' })] })
-    expectTypeOf(preset.name).toEqualTypeOf<'acme'>()
-    expectTypeOf(preset.plugins[0].name).toEqualTypeOf<'acme-format'>()
+    expect(await host.glob(['*.json'])).toEqual(['de.json', 'en.json'])
+    await host.deleteFile('de.json')
+    expect(await host.readFile('de.json')).toBeUndefined()
   })
 })

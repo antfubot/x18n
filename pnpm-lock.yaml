@@ -224,15 +224,30 @@ catalogs:
       specifier: ^8.3.1
       version: 8.3.4
   deps:
+    '@valibot/to-json-schema':
+      specifier: ^1.8.0
+      version: 1.8.0
     cac:
       specifier: ^7.1.0
       version: 7.1.0
     devframe:
       specifier: ^1.2.5
       version: 1.2.5
+    json5:
+      specifier: ^2.2.3
+      version: 2.2.3
+    jsonc-parser:
+      specifier: ^3.3.1
+      version: 3.3.1
+    valibot:
+      specifier: ^1.5.0
+      version: 1.5.0
     vscode-languageserver:
       specifier: ^10.1.2
       version: 10.1.2
+    yaml:
+      specifier: ^2.9.1
+      version: 2.9.1
   docs:
     comark-docs:
       specifier: github:comarkdown/comark-docs#f97dc864b0aa702d54c600f868589b7a2c185b3a
@@ -363,7 +378,7 @@ importers:
     dependencies:
       comark-docs:
         specifier: catalog:docs
-        version: https://codeload.github.com/comarkdown/comark-docs/tar.gz/f97dc864b0aa702d54c600f868589b7a2c185b3a(156b0b5612d71a067bf69ad96ea5de98)
+        version: https://codeload.github.com/comarkdown/comark-docs/tar.gz/f97dc864b0aa702d54c600f868589b7a2c185b3a(a5a6c3c80ff24b6226573cb60b46882d)
       nuxt:
         specifier: catalog:build
         version: 4.6.1(99cfab0e5acfc2a32cb208593de4d4be)
@@ -373,6 +388,15 @@ importers:
       '@x18n/core':
         specifier: workspace:*
         version: link:../core
+      json5:
+        specifier: catalog:deps
+        version: 2.2.3
+      jsonc-parser:
+        specifier: catalog:deps
+        version: 3.3.1
+      yaml:
+        specifier: catalog:deps
+        version: 2.9.1
 
   packages/cli:
     dependencies:
@@ -383,7 +407,18 @@ importers:
         specifier: catalog:deps
         version: 7.1.0
 
-  packages/core: {}
+  packages/core:
+    dependencies:
+      valibot:
+        specifier: catalog:deps
+        version: 1.5.0(typescript@6.0.3)
+    devDependencies:
+      '@valibot/to-json-schema':
+        specifier: catalog:deps
+        version: 1.8.0(valibot@1.5.0(typescript@6.0.3))
+      tsx:
+        specifier: catalog:cli
+        version: 4.23.15
 
   packages/lsp:
     dependencies:
@@ -3950,6 +3985,11 @@ packages:
     resolution: {integrity: sha512-TLShFIPjGsBb5/WGGjP/YQZBnLv43R/7zKBc3ZTM59iFv+LFPDSoeroAQmXMoT5JFrX7XtiPIUdI80/cvSYk0A==}
     peerDependencies:
       webpack: ^5
+
+  '@valibot/to-json-schema@1.8.0':
+    resolution: {integrity: sha512-a0M+uwCuQZEPAo65NYkFSJ14O5c213KoSZmPdoCfuFvUhfULi4T2Z6Tpjv6lTVMW9RoLm74RpRAjNEa43KcN+g==}
+    peerDependencies:
+      valibot: ^1.5.0
 
   '@vercel/analytics@2.0.1':
     resolution: {integrity: sha512-MTQG6V9qQrt1tsDeF+2Uoo5aPjqbVPys1xvnIftXSJYG2SrwXRHnqEvVoYID7BTruDz4lCd2Z7rM1BdkUehk2g==}
@@ -8973,6 +9013,14 @@ packages:
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
 
+  valibot@1.5.0:
+    resolution: {integrity: sha512-nil6AkP2TChWL43Z5uJ6GTxX01CUA+g8LWUM+N/rB9NBbkUMaUsi9PUNzlUPgoKASgmx9f7eGOYpJ04/fSa6FQ==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   validate-npm-package-license@3.0.4:
     resolution: {integrity: sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==}
 
@@ -11517,7 +11565,7 @@ snapshots:
       rc9: 3.1.0
       std-env: 4.3.0
 
-  '@nuxt/ui@4.11.3(df0b6b99b12e4c3901767525c30cf40a)':
+  '@nuxt/ui@4.11.3(f271270d492fe8df1d10f1f75c4f76da)':
     dependencies:
       '@floating-ui/dom': 1.8.0
       '@iconify/vue': 5.0.3(vue@3.5.44(typescript@6.0.3))
@@ -11587,6 +11635,7 @@ snapshots:
       vue-component-type-helpers: 3.3.13
     optionalDependencies:
       ai: 7.0.139(zod@4.6.7)
+      valibot: 1.5.0(typescript@6.0.3)
       zod: 4.6.7
     transitivePeerDependencies:
       - '@azure/app-configuration'
@@ -13604,6 +13653,10 @@ snapshots:
       - unloader
       - vite
 
+  '@valibot/to-json-schema@1.8.0(valibot@1.5.0(typescript@6.0.3))':
+    dependencies:
+      valibot: 1.5.0(typescript@6.0.3)
+
   '@vercel/analytics@2.0.1(nuxt@4.6.1(99cfab0e5acfc2a32cb208593de4d4be))(vue@3.5.44(typescript@6.0.3))':
     optionalDependencies:
       nuxt: 4.6.1(99cfab0e5acfc2a32cb208593de4d4be)
@@ -14642,7 +14695,7 @@ snapshots:
       - shiki
       - uploadthing
 
-  comark-docs@https://codeload.github.com/comarkdown/comark-docs/tar.gz/f97dc864b0aa702d54c600f868589b7a2c185b3a(156b0b5612d71a067bf69ad96ea5de98):
+  comark-docs@https://codeload.github.com/comarkdown/comark-docs/tar.gz/f97dc864b0aa702d54c600f868589b7a2c185b3a(a5a6c3c80ff24b6226573cb60b46882d):
     dependencies:
       '@ai-sdk/gateway': 4.0.112(zod@4.6.7)
       '@ai-sdk/vue': 4.0.139(vue@3.5.44(typescript@6.0.3))(zod@4.6.7)
@@ -14652,7 +14705,7 @@ snapshots:
       '@iconify-json/vscode-icons': 1.2.88
       '@iconify/vue': 5.0.3(vue@3.5.44(typescript@6.0.3))
       '@nuxt/kit': 4.6.1(@nuxt/schema@4.6.1)(confbox@0.3.1)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.3)(mlly@1.8.2)(oxc-parser@0.151.0)(rolldown@1.2.13)(unplugin@3.4.0(esbuild@0.28.2)(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(webpack@5.111.1(cssnano@9.8.0(postcss@8.5.30))(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.30)(sharp@0.35.5(@types/node@26.6.5))))
-      '@nuxt/ui': 4.11.3(df0b6b99b12e4c3901767525c30cf40a)
+      '@nuxt/ui': 4.11.3(f271270d492fe8df1d10f1f75c4f76da)
       '@nuxtjs/mcp-toolkit': 0.18.1(@nuxt/schema@4.6.1)(@vue/compiler-sfc@3.5.43)(confbox@0.3.1)(dotenv@17.4.2)(giget@3.3.1)(h3@2.0.2(crossws@0.4.15(srvx@1.0.5)))(jiti@2.7.0)(magic-string@1.4.3)(mlly@1.8.2)(oxc-parser@0.151.0)(rolldown@1.2.13)(rollup@4.64.6)(supports-color@10.2.2)(unplugin@3.4.0(esbuild@0.28.2)(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(webpack@5.111.1(cssnano@9.8.0(postcss@8.5.30))(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.30)(sharp@0.35.5(@types/node@26.6.5))))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))(zod@4.6.7)
       '@nuxtjs/robots': 6.2.4(@nuxt/schema@4.6.1)(confbox@0.3.1)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.3)(mlly@1.8.2)(nuxt@4.6.1(99cfab0e5acfc2a32cb208593de4d4be))(oxc-parser@0.151.0)(rolldown@1.2.13)(unplugin@3.4.0(esbuild@0.28.2)(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(webpack@5.111.1(cssnano@9.8.0(postcss@8.5.30))(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.30)(sharp@0.35.5(@types/node@26.6.5))))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))(zod@4.6.7)
       '@nuxtjs/sitemap': 8.6.2(@nuxt/schema@4.6.1)(@oxc-project/types@0.153.0)(confbox@0.3.1)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.3)(mlly@1.8.2)(nuxt@4.6.1(99cfab0e5acfc2a32cb208593de4d4be))(rolldown@1.2.13)(unplugin@3.4.0(esbuild@0.28.2)(rolldown@1.2.13)(rollup@4.64.6)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(webpack@5.111.1(cssnano@9.8.0(postcss@8.5.30))(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.30)(sharp@0.35.5(@types/node@26.6.5))))(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))(zod@4.6.7)
@@ -20137,6 +20190,10 @@ snapshots:
   url-join@4.0.1: {}
 
   util-deprecate@1.0.2: {}
+
+  valibot@1.5.0(typescript@6.0.3):
+    optionalDependencies:
+      typescript: 6.0.3
 
   validate-npm-package-license@3.0.4:
     dependencies:

@@ -15,15 +15,25 @@
   "sideEffects": false,
   "exports": {
     ".": "./dist/index.mjs",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./schema/config.json": "./schema/config.json",
+    "./schema/plugin.json": "./schema/plugin.json"
   },
   "types": "./dist/index.d.mts",
   "files": [
-    "dist"
+    "dist",
+    "schema"
   ],
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown && tsx scripts/schema.ts",
     "dev": "tsdown --watch",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "valibot": "catalog:deps"
+  },
+  "devDependencies": {
+    "@valibot/to-json-schema": "catalog:deps",
+    "tsx": "catalog:cli"
   }
 }

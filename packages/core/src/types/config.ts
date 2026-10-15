@@ -1,0 +1,203 @@
+import type { JsonObject, Severity } from './model'
+import type { Plugin, Preset } from './plugin'
+
+/** Where a value comes from: an argument, or a property of an object argument. */
+export interface ArgSource {
+  readonly arg: number
+  readonly property?: string | undefined
+}
+
+/** Data that drives the AST scanners: which calls are translate calls and where the key is. */
+export interface CallSpec {
+  /** Function or member path: 't', '$t', 'i18n.t', 'intl.formatMessage'. */
+  readonly callee: string | readonly string[]
+  /** 'call' (default): the key is an argument. 'selector': the argument is `$ => $.a.b`. 'accessor': member chain on a root. */
+  readonly kind?: 'call' | 'selector' | 'accessor' | undefined
+  /** Which argument holds the key. Default 0. */
+  readonly key?: number | ArgSource | undefined
+  /** Where the namespace comes from (call option, or factory argument when `factory` is true). */
+  readonly namespace?: ArgSource | undefined
+  /** Where a key prefix comes from (`keyPrefix` option, or next-intl `useTranslations('a.b')`). */
+  readonly keyPrefix?: ArgSource | undefined
+  /** The callee is a factory that returns the translate function, for example `useI18n()` returning `{ t }`. */
+  readonly factory?: boolean | undefined
+  /** For factories: the names of the returned translate functions. Default `['t']`. */
+  readonly returns?: readonly string[] | undefined
+  /** Type names that mark a parameter or prop as a translate function: ['TFunction']. */
+  readonly types?: readonly string[] | undefined
+}
+
+export interface RegexScannerSpec {
+  /** File extensions, without dot. */
+  readonly extensions: readonly string[]
+  /** Patterns with a `{key}` placeholder (i18n-ally `usageMatchRegex`), or a regex whose first group is the key. */
+  readonly patterns: readonly string[]
+}
+
+export interface ResourceSpec {
+  /** Path pattern with `{locale}`, `{locale?}`, `{namespace}`, `{namespaces}` and `{ext}` tokens and globs. */
+  readonly pattern: string
+  readonly format?: string | undefined
+  /** Fixed namespace for every matching file. */
+  readonly namespace?: string | undefined
+  /** Run matching JS/TS files in Node instead of reading them statically. Makes them read-only. */
+  readonly execute?: boolean | undefined
+}
+
+export type CheckLevel = Severity | 'off'
+export type CheckSetting = CheckLevel | readonly [CheckLevel, JsonObject]
+
+export interface GlossaryEntry {
+  readonly term: string
+  /** Translation per locale. */
+  readonly translations?: { readonly [locale: string]: string } | undefined
+  readonly note?: string | undefined
+  readonly doNotTranslate?: boolean | undefined
+}
+
+export interface ExtractTemplate {
+  readonly template: string
+  /** Hard-string kinds the template applies to, for example `jsx-text`. */
+  readonly kinds?: readonly string[] | undefined
+  /** File globs the template applies to. */
+  readonly files?: readonly string[] | undefined
+  /** Lines added once per file when missing, for example an import. */
+  readonly imports?: readonly string[] | undefined
+}
+
+export interface ExtractOptions {
+  /** Report hard strings as `hard-string` diagnostics. */
+  readonly autoDetect?: boolean | undefined
+  readonly keygen?: 'slug' | 'source' | 'random' | 'empty' | undefined
+  readonly keyCase?: 'camel' | 'snake' | 'kebab' | 'dot' | undefined
+  /** Template with `{fileName}`, `{dirName}` or `{component}`. */
+  readonly keyPrefix?: string | undefined
+  readonly keyMaxLength?: number | undefined
+  /** Reuse a key when the same text exists as a source value. Default true. */
+  readonly reuseExisting?: boolean | undefined
+  /** Strings or `/regex/` never extracted. */
+  readonly ignore?: readonly string[] | undefined
+  /** Ignored strings per file glob. */
+  readonly ignoreByFile?: { readonly [glob: string]: readonly string[] } | undefined
+  readonly ignoreAttributes?: readonly string[] | undefined
+  readonly ignoreCallees?: readonly string[] | undefined
+  readonly templates?: readonly (string | ExtractTemplate)[] | undefined
+}
+
+export interface UsageOptions {
+  readonly include?: readonly string[] | undefined
+  readonly exclude?: readonly string[] | undefined
+  readonly calls?: readonly CallSpec[] | undefined
+  readonly regex?: readonly RegexScannerSpec[] | undefined
+  /** Callee names never counted as translate calls. */
+  readonly ignoreCallees?: readonly string[] | undefined
+  /** Keys (globs) that count as used, for example keys built at runtime. */
+  readonly keysInUse?: readonly string[] | undefined
+  /** Rules like `{key}_plural`: when `{key}` is used the derived keys count as used. */
+  readonly derivedKeys?: readonly string[] | undefined
+}
+
+export interface WriteOptions {
+  readonly sort?: false | 'binary' | 'locale' | undefined
+  readonly indent?: number | 'tab' | undefined
+  /** i18n-ally `keepFulfilled`: `set` in one locale adds the key with an empty value to the others. */
+  readonly keepFilled?: boolean | undefined
+}
+
+export interface NamespaceOptions {
+  /** Separator between namespace and key in code. `.` merges the namespace into the key path. Default `.`. */
+  readonly separator?: string | undefined
+  /** Namespace of keys written without one. */
+  readonly default?: string | undefined
+}
+
+export type PluginSpecifier = string | readonly [string, JsonObject]
+
+/** The part of the config that YAML and JSON files can hold. Validated by `ConfigSchema`. */
+export interface SerializableConfig {
+  readonly $schema?: string | undefined
+  /** Project root, relative to the config file. */
+  readonly root?: string | undefined
+  /** Project name in a monorepo. Default: the directory name. */
+  readonly name?: string | undefined
+  readonly sourceLocale?: string | undefined
+  /** Locale codes as written in paths. Filters the found locales. */
+  readonly locales?: readonly string[] | undefined
+  readonly ignoreLocales?: readonly string[] | undefined
+  /** `'auto'` detects built-in presets from the project's dependencies. */
+  readonly presets?: 'auto' | readonly PluginSpecifier[] | undefined
+  readonly plugins?: readonly PluginSpecifier[] | undefined
+  readonly resources?: readonly ResourceSpec[] | undefined
+  /** Explicit format id per file extension (without dot). */
+  readonly formats?: { readonly [extension: string]: string } | undefined
+  readonly keyStyle?: 'auto' | 'nested' | 'flat' | undefined
+  readonly namespace?: NamespaceOptions | undefined
+  readonly usage?: UsageOptions | undefined
+  readonly write?: WriteOptions | undefined
+  readonly extract?: ExtractOptions | undefined
+  /** Overrides on top of the `recommended` check set. */
+  readonly checks?: { readonly [checkId: string]: CheckSetting } | undefined
+  /** Turn every warning into an error. */
+  readonly strict?: boolean | undefined
+  /** Keys (globs) excluded from all checks. */
+  readonly ignoreKeys?: readonly string[] | undefined
+  readonly glossary?: readonly GlossaryEntry[] | undefined
+  /** Monorepo: directories (globs) that are projects inheriting this config. */
+  readonly projects?: readonly string[] | undefined
+}
+
+/** Check ids of known plugins, for autocompletion. Plugins add theirs through declaration merging. */
+
+export interface CheckIds {}
+
+/** Options of plugins under their own config key. Plugins add theirs through declaration merging. */
+
+export interface PluginConfigs {}
+
+export type PresetOption = Preset | PluginSpecifier | false | undefined
+export type PluginOption = Plugin | Preset | PluginSpecifier | false | undefined
+
+/** The config accepted by `defineConfig`: the serializable part plus plugin objects. */
+export interface UserConfig extends Omit<SerializableConfig, 'presets' | 'plugins' | 'checks'> {
+  readonly presets?: 'auto' | readonly PresetOption[] | undefined
+  readonly plugins?: readonly PluginOption[] | undefined
+  readonly checks?: { readonly [K in keyof CheckIds]?: CheckSetting } & { readonly [checkId: string]: CheckSetting } | undefined
+  readonly pluginConfigs?: Partial<PluginConfigs> | undefined
+}
+
+export type ConfigOrigin = 'default' | 'user' | 'parent' | `plugin:${string}`
+
+/** The final config of one project. Every field is set. */
+export interface ResolvedConfig {
+  readonly name: string
+  readonly sourceLocale: string
+  readonly locales: readonly string[] | undefined
+  readonly ignoreLocales: readonly string[]
+  readonly resources: readonly ResourceSpec[]
+  readonly formats: { readonly [extension: string]: string }
+  readonly keyStyle: 'auto' | 'nested' | 'flat'
+  readonly namespace: { readonly separator: string, readonly default: string | undefined }
+  readonly usage: {
+    readonly include: readonly string[]
+    readonly exclude: readonly string[]
+    readonly calls: readonly CallSpec[]
+    readonly regex: readonly RegexScannerSpec[]
+    readonly ignoreCallees: readonly string[]
+    readonly keysInUse: readonly string[]
+    readonly derivedKeys: readonly string[]
+  }
+  readonly write: { readonly sort: false | 'binary' | 'locale', readonly indent: number | 'tab' | undefined, readonly keepFilled: boolean }
+  readonly extract: ExtractOptions
+  readonly checks: { readonly [checkId: string]: CheckSetting }
+  readonly strict: boolean
+  readonly ignoreKeys: readonly string[]
+  readonly glossary: readonly GlossaryEntry[]
+  readonly pluginConfigs: Partial<PluginConfigs>
+  /** Origin of each top-level value, for `explain()`. */
+  readonly origins: { readonly [key: string]: ConfigOrigin }
+}
+
+/** A mutable view of the config that `config` hooks change. */
+export type ConfigDraft = {
+  -readonly [K in keyof Omit<ResolvedConfig, 'origins' | 'name'>]: ResolvedConfig[K]
+}

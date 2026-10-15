@@ -12,6 +12,13 @@ export default antfu(
       '**/.output',
       '**/.data',
       'packages/vscode/src/generated',
+      'packages/core/schema',
     ],
+  },
+  {
+    rules: {
+      // Parsers, scanners and the edit planner walk trees; 25 keeps them readable without splitting every visitor.
+      'sonarjs/cognitive-complexity': ['error', 25],
+    },
   },
 )
