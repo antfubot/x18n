@@ -342,6 +342,12 @@ export interface Placeholder {
   readonly name: string;
   readonly range: TextRange;
 }
+export interface PlaceholderProblem {
+  readonly key: KeyString;
+  readonly locale: LocaleCode;
+  readonly missing: readonly string[];
+  readonly extra: readonly string[];
+}
 export interface PlaceholderSyntax {
   readonly id: string;
   readonly find: (_: string) => readonly Placeholder[];
@@ -969,8 +975,10 @@ export declare function joinKey(_: string | undefined, _: readonly string[]): Ke
 export declare function keyMatcher(_: readonly string[]): (_: KeyString) => boolean;
 export declare function localeSpellingKey(_: LocaleCode): string;
 export declare function parseLocaleInfo(_: LocaleCode): LocaleInfo;
+export declare function parseMessageBatch(_: Project, _: JsonValue): EditOp[];
 export declare function pathId(_: readonly string[]): string;
 export declare function pathMatcher(_: readonly string[]): (_: string) => boolean;
+export declare function placeholderProblems(_: Project, _: readonly EditOp[]): PlaceholderProblem[];
 export declare function rangeContains(_: TextRange, _: number): boolean;
 export declare function renderPrompt(_: PromptData): string;
 export declare function replaceKeyPrefix(_: KeyString, _: KeyString, _: KeyString): KeyString;

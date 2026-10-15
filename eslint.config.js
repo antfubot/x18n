@@ -12,6 +12,7 @@ export default antfu(
       '**/.output',
       '**/.data',
       'packages/vscode/src/generated',
+      '**/.vscode-test',
       'packages/core/schema',
       // Sample user projects for tests.
       'test/fixtures',

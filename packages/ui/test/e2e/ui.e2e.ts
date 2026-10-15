@@ -1,0 +1,71 @@
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import { expect, test } from '@playwright/test'
+import { buildReport, fixture, serveStatic, startUi } from './workspace'
+
+test('edits a value in the grid and writes the locale file', async ({ page }) => {
+  const { root, dispose } = await fixture()
+  const { info, child } = await startUi(root)
+  try {
+    await page.goto(info.link!)
+    await page.getByRole('link', { name: 'Keys', exact: true }).click()
+    const cell = page.locator('[data-key="nav.about"] [data-locale="de"]')
+    await cell.dblclick()
+    await page.getByLabel('Value of nav.about in de').fill('Über uns')
+    await page.keyboard.press('Enter')
+    await expect.poll(async () => JSON.parse(await readFile(join(root, 'src/locales/de.json'), 'utf8')).nav.about).toBe('Über uns')
+    await expect(cell).toContainText('Über uns')
+  }
+  finally {
+    child.kill()
+    await dispose()
+  }
+})
+
+test('refuses unauthenticated clients', async ({ page, request }) => {
+  const { root, dispose } = await fixture()
+  const { info, child } = await startUi(root)
+  try {
+    const body = { jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }
+    const headers = { 'origin': new URL(info.url).origin, 'accept': 'application/json, text/event-stream', 'content-type': 'application/json' }
+    expect((await request.post(info.mcp.url, { headers, data: body })).status()).toBe(401)
+    expect((await request.post(info.mcp.url, { headers: { ...headers, authorization: 'Bearer nope' }, data: body })).status()).toBe(401)
+
+    await page.goto(info.url)
+    await expect(page.getByRole('heading', { name: 'Connect to x18n' })).toBeVisible()
+    await page.getByLabel('Auth code').fill('000000')
+    await page.getByRole('button', { name: 'Connect' }).click()
+    await expect(page.getByText('That code did not work')).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Keys', exact: true })).toBeVisible()
+    await page.getByRole('link', { name: 'Keys', exact: true }).click()
+    await expect(page.locator('[data-key]')).toHaveCount(0)
+  }
+  finally {
+    child.kill()
+    await dispose()
+  }
+})
+
+test('the static report renders keys without edit controls', async ({ page }) => {
+  const { root, dispose } = await fixture()
+  const outDir = join(root, '.x18n/report')
+  await buildReport(root, outDir)
+  const server = await serveStatic(outDir)
+  try {
+    await page.goto(server.url)
+    await expect(page.getByText('Read-only report')).toBeVisible()
+    await page.getByRole('link', { name: 'Keys', exact: true }).click()
+    await expect(page.locator('[data-key="nav.home"] [data-locale="de"]')).toContainText('Start')
+    await page.locator('[data-key="nav.about"] [data-locale="de"]').dblclick()
+    await expect(page.getByLabel('Value of nav.about in de')).toHaveCount(0)
+    await page.locator('[data-key="app.greeting"] [role="gridcell"]').first().dblclick()
+    await expect(page.getByRole('heading', { name: 'app.greeting' })).toBeVisible()
+    await expect(page.locator('[data-placeholder]', { hasText: '{name}' })).toBeVisible()
+    await expect(page.getByTitle('Edit', { exact: true })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Copy translate prompt' })).toHaveCount(0)
+  }
+  finally {
+    server.close()
+    await dispose()
+  }
+})

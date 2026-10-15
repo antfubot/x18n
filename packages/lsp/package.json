@@ -37,6 +37,8 @@
     "@x18n/builtins": "workspace:*",
     "@x18n/core": "workspace:*",
     "@x18n/node": "workspace:*",
+    "@x18n/ui": "workspace:*",
+    "devframe": "catalog:deps",
     "vscode-languageserver": "catalog:deps",
     "vscode-languageserver-textdocument": "catalog:deps"
   },

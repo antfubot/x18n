@@ -1,16 +1,17 @@
 import type { DevframeDefinition } from 'devframe'
+import type { RpcOptions } from './rpc'
+import type { UiProject, X18nState } from './types'
 import { fileURLToPath } from 'node:url'
-import { defineDevframe, defineRpcFunction } from 'devframe'
+import { defineDevframe } from 'devframe'
 import { description, homepage, name, version } from '../../package.json' with { type: 'json' }
+import { registerAgentTools } from './agent'
+import { registerRpc } from './rpc'
 
-const info = defineRpcFunction({
-  name: 'info',
-  type: 'static',
-  jsonSerializable: true,
-  handler: () => ({ version }),
-})
+export type { RpcOptions as X18nDevframeOptions } from './rpc'
+export type * from './types'
 
-export function createX18nDevframe(): DevframeDefinition {
+/** The x18n UI, RPC functions and MCP tools over loaded projects, as a devframe definition. */
+export function createX18nDevframe(projects: readonly UiProject[], options: RpcOptions = {}): DevframeDefinition {
   return defineDevframe({
     id: 'x18n',
     name: 'x18n',
@@ -18,10 +19,23 @@ export function createX18nDevframe(): DevframeDefinition {
     packageName: name,
     homepage,
     description,
+    icon: 'ph:translate-duotone',
     importMetaUrl: import.meta.url,
     clientAssets: fileURLToPath(new URL('./public', import.meta.url)),
-    setup(ctx) {
-      ctx.scope('x18n').rpc.register(info)
+    async setup(ctx) {
+      registerRpc(ctx, projects, options)
+      if (ctx.mode !== 'dev')
+        return
+      registerAgentTools(ctx, projects)
+      const state = await ctx.scope('x18n').rpc.sharedState('state', { initialValue: { revision: 0, changedKeys: [] } satisfies X18nState })
+      for (const p of projects) {
+        p.project.onChange((change) => {
+          state.mutate((draft) => {
+            draft.revision += 1
+            draft.changedKeys = [...change.keys]
+          })
+        })
+      }
     },
   })
 }

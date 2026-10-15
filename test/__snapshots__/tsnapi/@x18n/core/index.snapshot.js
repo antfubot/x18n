@@ -39,8 +39,10 @@ export function joinKey(_, _) {}
 export function keyMatcher(_) {}
 export function localeSpellingKey(_) {}
 export function parseLocaleInfo(_) {}
+export function parseMessageBatch(_, _) {}
 export function pathId(_) {}
 export function pathMatcher(_) {}
+export function placeholderProblems(_, _) {}
 export function rangeContains(_, _) {}
 export function renderPrompt(_) {}
 export function replaceKeyPrefix(_, _, _) {}

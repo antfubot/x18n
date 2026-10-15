@@ -1,0 +1,128 @@
+import type { Workspace } from '@x18n/node'
+import type { DevframeNodeContext } from 'devframe'
+import { cp, mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { loadWorkspace } from '@x18n/node'
+import { createX18nDevframe } from '@x18n/ui'
+import { createHostContext } from 'devframe/node'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+
+const fixtures = fileURLToPath(new URL('../../../test/fixtures/', import.meta.url))
+let root: string
+let workspace: Workspace
+let ctx: DevframeNodeContext
+let project: string
+
+/** What the client receives: JSON drops `undefined` fields. */
+const wire = (value: unknown): unknown => JSON.parse(JSON.stringify(value))
+
+beforeAll(async () => {
+  // A fixed directory name keeps the project name (and the snapshots) stable.
+  root = join(await mkdtemp(join(tmpdir(), 'x18n-ui-')), 'vue-i18n')
+  await cp(join(fixtures, 'vue-i18n'), root, { recursive: true })
+  workspace = await loadWorkspace({ cwd: root, cache: false })
+  project = workspace.projects[0]!.name
+  ctx = await createHostContext({
+    cwd: root,
+    mode: 'dev',
+    host: { mountStatic: () => {}, resolveOrigin: () => 'http://localhost', getStorageDir: () => join(root, '.devframe') },
+  })
+  await createX18nDevframe(workspace.projects).setup(ctx)
+})
+
+afterAll(async () => {
+  workspace.projects.forEach(p => p.project.dispose())
+  await rm(join(root, '..'), { recursive: true, force: true })
+})
+
+describe('rpc functions', () => {
+  it('summarizes projects', async () => {
+    expect(wire(await ctx.rpc.invokeLocal('x18n:project'))).toMatchSnapshot()
+  })
+
+  it('lists keys with values and flags', async () => {
+    expect(wire(await ctx.rpc.invokeLocal('x18n:keys', { project }))).toMatchSnapshot()
+  })
+
+  it('details one key with usages and diagnostics', async () => {
+    expect(wire(await ctx.rpc.invokeLocal('x18n:key', { project, key: 'app.greeting' }))).toMatchSnapshot()
+    expect(await ctx.rpc.invokeLocal('x18n:key', { project, key: 'nope' })).toBeNull()
+  })
+
+  it('lists usages and the analysis', async () => {
+    expect(wire(await ctx.rpc.invokeLocal('x18n:usages', { project }))).toMatchSnapshot()
+    expect(wire(await ctx.rpc.invokeLocal('x18n:analysis', { project }))).toMatchSnapshot()
+  })
+
+  it('explains the project', async () => {
+    expect(wire(await ctx.rpc.invokeLocal('x18n:explain'))).toMatchSnapshot()
+  })
+
+  it('builds the translate prompt', async () => {
+    expect(wire(await ctx.rpc.invokeLocal('x18n:translate-prompt', { project, locale: 'de' }))).toMatchSnapshot()
+  })
+
+  it('lists extraction candidates', async () => {
+    expect(wire(await ctx.rpc.invokeLocal('x18n:extract-candidates', { project }))).toMatchSnapshot()
+  })
+
+  it('rejects invalid input', async () => {
+    // @ts-expect-error a client may send anything; the schema rejects it
+    await expect(ctx.rpc.invokeLocal('x18n:key', { project })).rejects.toThrow()
+  })
+
+  it('plans, refuses placeholder problems, then applies and bumps the shared state', async () => {
+    const state = await ctx.rpc.sharedState.get('x18n:state')
+    const ops = [{ type: 'set', key: 'app.greeting', locale: 'de', value: 'Hallo' }] as const
+    expect(wire(await ctx.rpc.invokeLocal('x18n:plan', { project, ops: [...ops] }))).toMatchSnapshot()
+    expect((await ctx.rpc.invokeLocal('x18n:apply', { project, ops: [...ops] })).applied).toBe(false)
+    const applied = await ctx.rpc.invokeLocal('x18n:apply', { project, ops: [{ type: 'set', key: 'app.greeting', locale: 'de', value: 'Hallo {name}' }] })
+    expect(applied.applied).toBe(true)
+    expect(JSON.parse(await readFile(join(root, 'src/locales/de.json'), 'utf8')).app.greeting).toBe('Hallo {name}')
+    await expect.poll(() => state.value().revision).toBeGreaterThan(0)
+    expect(state.value().changedKeys).toContain('app.greeting')
+  })
+})
+
+describe('agent tools', () => {
+  it('names the tools for MCP', () => {
+    expect(ctx.agent.list().tools.map(t => ({ id: t.id, safety: t.safety, description: t.description, inputSchema: t.inputSchema }))).toMatchSnapshot()
+  })
+
+  it('reports status, keys, check and the translate prompt', async () => {
+    expect(wire(await ctx.agent.invoke('x18n:status', {}))).toMatchSnapshot()
+    expect(wire(await ctx.agent.invoke('x18n:keys', { missing: 'de', values: true, limit: 2 }))).toMatchSnapshot()
+    expect(wire(await ctx.agent.invoke('x18n:check', { only: ['missing-translation'] }))).toMatchSnapshot()
+    expect(wire(await ctx.agent.invoke('x18n:usages', { key: 'nav.home' }))).toMatchSnapshot()
+    expect(wire(await ctx.agent.invoke('x18n:get', { key: 'nav.home' }))).toMatchSnapshot()
+    await expect(ctx.agent.invoke('x18n:get', { key: 'nope' })).rejects.toThrow('Key not found')
+  })
+
+  it('returns placeholder problems instead of writing', async () => {
+    const before = await readFile(join(root, 'src/locales/de.json'), 'utf8')
+    expect(wire(await ctx.agent.invoke('x18n:set_messages', { messages: { de: { 'app.greeting': 'Hallo' } } }))).toMatchSnapshot()
+    expect(await readFile(join(root, 'src/locales/de.json'), 'utf8')).toBe(before)
+    const written = await ctx.agent.invoke('x18n:set_messages', { messages: { de: { 'nav.about': 'Über uns' } } })
+    expect(written).toMatchObject({ applied: true, keys: ['nav.about'] })
+    expect(JSON.parse(await readFile(join(root, 'src/locales/de.json'), 'utf8')).nav.about).toBe('Über uns')
+  })
+
+  it('plans a rename and applies it on confirm', async () => {
+    expect(wire(await ctx.agent.invoke('x18n:rename_key', { from: 'unused', to: 'gone' }))).toMatchSnapshot()
+    expect(JSON.parse(await readFile(join(root, 'src/locales/en.json'), 'utf8')).unused).toBe('Nobody uses me')
+    expect(await ctx.agent.invoke('x18n:rename_key', { from: 'unused', to: 'gone', confirm: true })).toMatchObject({ applied: true })
+    expect(JSON.parse(await readFile(join(root, 'src/locales/en.json'), 'utf8')).gone).toBe('Nobody uses me')
+  })
+
+  it('deletes on confirm only', async () => {
+    expect(await ctx.agent.invoke('x18n:delete_key', { key: 'gone' })).toMatchObject({ applied: false })
+    expect(await ctx.agent.invoke('x18n:delete_key', { key: 'gone', confirm: true })).toMatchObject({ applied: true })
+    expect(JSON.parse(await readFile(join(root, 'src/locales/en.json'), 'utf8')).gone).toBeUndefined()
+  })
+
+  it('plans an extraction', async () => {
+    expect(wire(await ctx.agent.invoke('x18n:extract_plan', {}))).toMatchSnapshot()
+  })
+})

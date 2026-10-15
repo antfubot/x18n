@@ -1,5 +1,124 @@
 {
   "app": {
-    "name": "x18n"
+    "name": "x18n",
+    "loading": "Loading the project…",
+    "error": "Could not connect: {message}",
+    "project": "Project",
+    "static": "Read-only report",
+    "staticHint": "A snapshot built with `x18n build`. Run `x18n ui` to edit."
+  },
+  "auth": {
+    "title": "Connect to x18n",
+    "hint": "Enter the 6-digit code that `x18n ui` printed in the terminal.",
+    "code": "Auth code",
+    "submit": "Connect",
+    "rejected": "That code did not work. Check the terminal for the current one."
+  },
+  "nav": {
+    "overview": "Overview",
+    "keys": "Keys",
+    "usages": "Usages",
+    "extract": "Extract",
+    "project": "Project"
+  },
+  "overview": {
+    "keys": "Keys",
+    "resources": "Resources",
+    "usages": "Usages",
+    "locales": "Locales",
+    "coverage": "Coverage",
+    "source": "source",
+    "missing": "{missing} missing, {empty} empty",
+    "diagnostics": "Diagnostics",
+    "errors": "{count} errors",
+    "warnings": "{count} warnings",
+    "clean": "No problems found.",
+    "presets": "Presets",
+    "noPresets": "No preset detected.",
+    "recent": "Recent changes",
+    "noRecent": "Nothing changed since the page opened."
+  },
+  "keys": {
+    "search": "Search keys and values",
+    "namespace": "Namespace",
+    "allNamespaces": "All namespaces",
+    "missingIn": "Missing in",
+    "anyLocale": "Any locale",
+    "missingInLocale": "Missing in {locale}",
+    "unused": "Unused",
+    "withDiagnostics": "With problems",
+    "count": "{shown} of {total} keys",
+    "grid": "Keys and values per locale",
+    "key": "Key",
+    "unusedHint": "No code uses this key",
+    "diagnosticsHint": "Problems on this key",
+    "editValue": "Value of {key} in {locale}",
+    "empty": "No keys match.",
+    "helpMove": "Arrows or j/k to move",
+    "helpEdit": "Enter to edit, Esc to cancel",
+    "helpOpen": "o to open the key",
+    "helpSearch": "/ to search"
+  },
+  "value": {
+    "missing": "missing",
+    "empty": "empty"
+  },
+  "edit": {
+    "rejected": "Not saved: {key} in {locale}: {message}.",
+    "placeholdersMissing": "missing placeholders {names}",
+    "placeholdersExtra": "unexpected placeholders {names}",
+    "saveAnyway": "Save anyway",
+    "dismiss": "Dismiss"
+  },
+  "detail": {
+    "back": "Back to keys",
+    "notFound": "This key is not defined.",
+    "values": "Values",
+    "edit": "Edit",
+    "diagnostics": "Problems",
+    "usages": "Usages ({count})",
+    "noUsages": "No code uses this key.",
+    "possible": "possible",
+    "openInEditor": "Open in editor"
+  },
+  "prompt": {
+    "copy": "Copy translate prompt",
+    "copied": "Copied",
+    "hint": "Copy a prompt for an LLM or agent that translates the missing messages"
+  },
+  "locale": {
+    "openInGrid": "Show in the grid",
+    "progress": "{translated} of {total} translated ({percent}%)",
+    "missing": "Missing ({count})",
+    "empty": "Empty ({count})",
+    "problems": "Placeholder and syntax problems ({count})"
+  },
+  "usages": {
+    "missing": "Not defined ({count})",
+    "unused": "Unused ({count})",
+    "dynamic": "Dynamic ({count})",
+    "all": "All ({count})",
+    "missingHint": "Keys used in code but not defined in the source locale.",
+    "unusedHint": "Keys defined in the source locale that no code uses.",
+    "dynamicHint": "Usages with a computed key. Keys under their prefix count as used.",
+    "filter": "Filter by file or key"
+  },
+  "extract": {
+    "hint": "Hard-coded strings with a proposed key. Edit keys, untick strings to skip, then apply.",
+    "none": "No hard-coded strings found.",
+    "key": "Key",
+    "apply": "Extract {count} strings",
+    "done": "Extracted {count} keys, changed {files} files."
+  },
+  "project": {
+    "presets": "Presets",
+    "finders": "Locale finders",
+    "resources": "{count} resources",
+    "formats": "Formats",
+    "scanners": "Scanners",
+    "files": "{count} files",
+    "problems": "Problems",
+    "conflict": ".{extension}: {winner} wins over {loser}",
+    "config": "Config and where each value comes from"
   }
 }

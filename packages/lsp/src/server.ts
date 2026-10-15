@@ -19,10 +19,11 @@ import type {
   WorkspaceEdit,
 } from 'vscode-languageserver'
 import type * as P from './protocol'
+import type { UiServers } from './ui'
 import { relative, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { extractItems, findCandidates } from '@x18n/builtins/extractors'
-import { createLineIndex, createOverlayHost, isX18nError } from '@x18n/core'
+import { createLineIndex, createOverlayHost, isX18nError, renderPrompt } from '@x18n/core'
 import { loadWorkspace } from '@x18n/node'
 import {
   CodeActionKind,
@@ -52,8 +53,6 @@ export interface ServerOptions {
   readonly loadProjects?: ((folder: string, wrapHost: (host: NodeHost) => OverlayHost) => Promise<readonly Omit<ServerProject, 'overlay'>[]>) | undefined
   /** Starts the UI server for a project (`x18n/openUi`). */
   readonly openUi?: ((project: ServerProject) => Promise<P.OpenUiResult>) | undefined
-  /** Builds a translate prompt (`x18n/translatePrompt`). */
-  readonly translatePrompt?: ((project: Project, params: P.TranslatePromptParams) => string) | undefined
 }
 
 interface Settings {
@@ -736,6 +735,12 @@ class Server {
 
 /** Registers the x18n handlers on a connection. The caller owns transport and `listen()`. */
 export function setupServer(connection: Connection, options: ServerOptions = {}): void {
+  // The UI pulls in devframe; load it on the first `x18n/openUi` only.
+  let ui: Promise<UiServers> | undefined
+  const openUi = options.openUi ?? (async (entry: ServerProject) => (await (ui ??= import('./ui').then(m => m.createUiServers(connection)))).open(entry))
+  connection.onShutdown(async () => {
+    await (await ui)?.close()
+  })
   const server = new Server(connection, options)
   server.documents.listen(connection)
   connection.onInitialize(params => server.initialize(params))
@@ -782,15 +787,15 @@ export function setupServer(connection: Connection, options: ServerOptions = {})
   connection.onRequest(methods.openUi, async (params: P.OpenUiParams) => {
     await server.ready
     const entry = server.entryByName(params?.project)
-    if (!entry || !options.openUi)
-      throw new ResponseError(1, 'The UI is not available in this server.')
-    return options.openUi(entry)
+    if (!entry)
+      throw new ResponseError(1, `No project "${params?.project ?? ''}" in this server.`)
+    return openUi(entry)
   })
   connection.onRequest(methods.translatePrompt, async (params: P.TranslatePromptParams) => {
     await server.ready
     const entry = server.entryByName(params.project)
-    if (!entry || !options.translatePrompt)
-      throw new ResponseError(1, 'Translate prompts are not available in this server.')
-    return options.translatePrompt(entry.project, params)
+    if (!entry)
+      throw new ResponseError(1, `Unknown project "${params.project}".`)
+    return renderPrompt(entry.project.prompt('translate', params.locale, { keys: params.keys }))
   })
 }

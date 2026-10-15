@@ -1,0 +1,22 @@
+<script setup lang="ts">
+import type { PromptQuery } from '../../src/node/types'
+import { ref } from 'vue'
+import { t } from '../i18n'
+import { backend } from '../state'
+
+const props = defineProps<{ query: PromptQuery, label?: string }>()
+const copied = ref(false)
+
+async function copy(): Promise<void> {
+  await navigator.clipboard.writeText(await backend.value!.translatePrompt(props.query))
+  copied.value = true
+  setTimeout(() => copied.value = false, 1500)
+}
+</script>
+
+<template>
+  <button v-if="backend?.capabilities.prompts" class="btn-action-sm" :title="t('prompt.hint')" @click="copy">
+    <span :class="copied ? 'i-ph-check' : 'i-ph-clipboard-text-duotone'" />
+    {{ copied ? t('prompt.copied') : label ?? t('prompt.copy') }}
+  </button>
+</template>

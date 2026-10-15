@@ -109,7 +109,6 @@ export interface Range {
 export interface ServerOptions {
   readonly loadProjects?: ((_: string, _: (_: NodeHost) => OverlayHost) => Promise<readonly Omit<ServerProject, "overlay">[]>) | undefined;
   readonly openUi?: ((_: ServerProject) => Promise<OpenUiResult>) | undefined;
-  readonly translatePrompt?: ((_: Project, _: TranslatePromptParams) => string) | undefined;
 }
 export interface ServerProject {
   readonly name: string;

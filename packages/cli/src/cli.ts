@@ -1,4 +1,5 @@
 import type { CAC } from 'cac'
+import type { UiCommandOptions } from './commands/ui'
 import type { GlobalOptions } from './context'
 import process from 'node:process'
 import cac from 'cac'
@@ -10,6 +11,9 @@ import { doctor, get, keys, locales, status, usages } from './commands/look'
 import { prompt } from './commands/prompt'
 import { eject, init, schema } from './commands/setup'
 import { errorInfo, exitCodeOf, printJson, stdinArg } from './context'
+
+// The UI commands pull in devframe; load them only when one runs, so other commands start fast.
+const uiCommands = (): Promise<typeof import('./commands/ui')> => import('./commands/ui')
 
 type Action = (...args: never[]) => Promise<number | void>
 
@@ -125,6 +129,17 @@ export function createCli(): CAC {
     .option('--format <format>', 'markdown (default) or json')
     .option('--no-context', 'Leave out code around usages')
     .action(run('prompt', prompt))
+
+  cli.command('ui', 'Start the UI: browse and edit messages in the browser, with HTTP MCP at /__mcp')
+    .option('--port <port>', 'Port (default: a free one from 9999)')
+    .option('--host <host>', 'Bind host (default: localhost)')
+    .option('--no-open', 'Do not open the browser')
+    .option('--no-auth', 'Skip authentication (CI and e2e only)')
+    .action(run('ui', async (options: UiCommandOptions) => (await uiCommands()).ui(options)))
+  cli.command('build', 'Write a static, read-only report of the UI')
+    .option('--out-dir <dir>', 'Output directory (default: .x18n/report)')
+    .action(run('build', async (options: GlobalOptions & { outDir?: string }) => (await uiCommands()).build(options)))
+  cli.command('mcp', 'Serve the MCP tools over stdio').action(run('mcp', async (options: GlobalOptions) => (await uiCommands()).mcp(options)))
 
   cli.command('init', 'Detect the setup and write x18n.config.ts')
     .option('--format <format>', 'ts (default), yml or json')

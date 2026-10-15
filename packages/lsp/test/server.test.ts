@@ -148,6 +148,17 @@ describe('language server', () => {
     await client.sendNotification('textDocument/didChange', { textDocument: { uri: uri('src/main.ts'), version: 2 }, contentChanges: [{ text: `${content}\ni18n.global.t('brand.new')\n` }] })
     await expect.poll(() => diagnostics.get(uri('src/main.ts'))?.map(d => d.message), { timeout: 3000 }).toEqual(['"brand.new" is not defined in en.'])
   })
+
+  // Last: `shutdown` stops the UI server.
+  it('starts the UI on loopback with a one-time code, reuses it, and stops it on shutdown', async () => {
+    const opened: { url: string, token: string } = await client.sendRequest(methods.openUi, {})
+    expect(opened.url).toMatch(/^http:\/\/(?:localhost|127\.0\.0\.1):\d+\/$/)
+    expect(opened.token).toMatch(/^\d{6}$/)
+    expect((await client.sendRequest<{ url: string }>(methods.openUi, {})).url).toBe(opened.url)
+    expect(await (await fetch(`${opened.url}__connection.json`)).json()).toMatchObject({ backend: 'websocket' })
+    await client.sendRequest('shutdown')
+    await expect(fetch(`${opened.url}__connection.json`)).rejects.toThrow()
+  })
 })
 
 describe('x18n-lsp binary', () => {

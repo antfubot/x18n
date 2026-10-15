@@ -1,0 +1,1592 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`agent tools > names the tools for MCP 1`] = `
+[
+  {
+    "description": "Overview of the i18n project: locales with translation coverage, counts of keys, resources and usages, diagnostics by check, and detected presets. Call it first to learn project names, the source locale and locale codes.",
+    "id": "x18n:status",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "project": {
+          "description": "Project name from \`x18n_status\`. Required only in a monorepo with several projects.",
+          "type": "string",
+        },
+      },
+      "required": [],
+      "type": "object",
+    },
+    "safety": "read",
+  },
+  {
+    "description": "List message keys, paged. Filter by \`missing\` locale (keys to translate), \`unused\` (keys no code uses), \`namespace\` or a key \`glob\`. Pass \`values: true\` to get the value per locale. Continue with \`cursor: nextCursor\`.",
+    "id": "x18n:keys",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "cursor": {
+          "description": "\`nextCursor\` of the previous page.",
+          "type": "string",
+        },
+        "glob": {
+          "description": "Key glob: \`*\` inside a segment, \`**\` across segments.",
+          "type": "string",
+        },
+        "limit": {
+          "description": "Page size. Default 100.",
+          "type": "number",
+        },
+        "missing": {
+          "description": "Only keys missing or empty in this locale.",
+          "type": "string",
+        },
+        "namespace": {
+          "type": "string",
+        },
+        "project": {
+          "description": "Project name from \`x18n_status\`. Required only in a monorepo with several projects.",
+          "type": "string",
+        },
+        "unused": {
+          "description": "Only keys without usages in code.",
+          "type": "boolean",
+        },
+        "values": {
+          "description": "Include the value per locale.",
+          "type": "boolean",
+        },
+      },
+      "required": [],
+      "type": "object",
+    },
+    "safety": "read",
+  },
+  {
+    "description": "One key: its value in every locale with file and line, locales where it is missing, usages in code with a few lines of context, and diagnostics. Check a key with it before creating or renaming one.",
+    "id": "x18n:get",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "key": {
+          "description": "Full key, for example \`nav.home\` or \`common:save\`.",
+          "type": "string",
+        },
+        "project": {
+          "description": "Project name from \`x18n_status\`. Required only in a monorepo with several projects.",
+          "type": "string",
+        },
+      },
+      "required": [
+        "key",
+      ],
+      "type": "object",
+    },
+    "safety": "read",
+  },
+  {
+    "description": "Usages in code, paged: of one \`key\` (usages with a computed key under a prefix of it are marked \`possible\`), of one file (\`path\`), or all. Each usage has file, line, column and a code snippet.",
+    "id": "x18n:usages",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "cursor": {
+          "description": "\`nextCursor\` of the previous page.",
+          "type": "string",
+        },
+        "key": {
+          "description": "Only usages of this key.",
+          "type": "string",
+        },
+        "limit": {
+          "description": "Page size. Default 100.",
+          "type": "number",
+        },
+        "path": {
+          "description": "Only usages in this file (path relative to the project root).",
+          "type": "string",
+        },
+        "project": {
+          "description": "Project name from \`x18n_status\`. Required only in a monorepo with several projects.",
+          "type": "string",
+        },
+      },
+      "required": [],
+      "type": "object",
+    },
+    "safety": "read",
+  },
+  {
+    "description": "Run the checks (missing translations, placeholder mismatches, invalid syntax, unused and undefined keys, ...) and return diagnostics, paged. After writing messages, call it with \`only: ["placeholder-mismatch", "invalid-syntax"]\` and fix what it reports.",
+    "id": "x18n:check",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "cursor": {
+          "description": "\`nextCursor\` of the previous page.",
+          "type": "string",
+        },
+        "limit": {
+          "description": "Page size. Default 100.",
+          "type": "number",
+        },
+        "locale": {
+          "description": "Only diagnostics for these locales.",
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "only": {
+          "description": "Only these check ids, for example \`placeholder-mismatch\`, \`invalid-syntax\`, \`missing-translation\`.",
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "project": {
+          "description": "Project name from \`x18n_status\`. Required only in a monorepo with several projects.",
+          "type": "string",
+        },
+      },
+      "required": [],
+      "type": "object",
+    },
+    "safety": "read",
+  },
+  {
+    "description": "Instructions for translating missing messages into a locale: rules, glossary, style examples and the items with usage context, as markdown. Follow it, then write the results with x18n_set_messages. It says how many items remain and the cursor for the next batch.",
+    "id": "x18n:translate_prompt",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "cursor": {
+          "description": "\`nextCursor\` of the previous prompt.",
+          "type": "string",
+        },
+        "keys": {
+          "anyOf": [
+            {
+              "description": "Key glob: \`*\` inside a segment, \`**\` across segments.",
+              "type": "string",
+            },
+            {
+              "items": {
+                "type": "string",
+              },
+              "type": "array",
+            },
+          ],
+        },
+        "limit": {
+          "description": "Messages per prompt. Default 50.",
+          "type": "number",
+        },
+        "locale": {
+          "description": "Target locale code, as listed by \`x18n_status\`.",
+          "type": "string",
+        },
+        "namespace": {
+          "type": "string",
+        },
+        "project": {
+          "description": "Project name from \`x18n_status\`. Required only in a monorepo with several projects.",
+          "type": "string",
+        },
+      },
+      "required": [
+        "locale",
+      ],
+      "type": "object",
+    },
+    "safety": "read",
+  },
+  {
+    "description": "Set many messages at once: \`messages\` is \`{ "<locale>": { "<key>": "<value>" } }\`, the same shape as \`x18n apply\`. Files keep their format, key style and order. When a value drops or adds placeholders compared to the source value, nothing is written and \`problems\` lists them (\`applied: false\`); fix the values, or pass \`force: true\`.",
+    "id": "x18n:set_messages",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "force": {
+          "description": "Write values even when their placeholders differ from the source value.",
+          "type": "boolean",
+        },
+        "messages": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                },
+                {
+                  "type": "number",
+                },
+                {
+                  "type": "boolean",
+                },
+                {
+                  "type": "null",
+                },
+              ],
+            },
+            "propertyNames": {
+              "type": "string",
+            },
+            "type": "object",
+          },
+          "description": "\`{ "<locale>": { "<key>": "<value>" } }\`, the same shape as \`x18n apply\`.",
+          "propertyNames": {
+            "type": "string",
+          },
+          "type": "object",
+        },
+        "project": {
+          "description": "Project name from \`x18n_status\`. Required only in a monorepo with several projects.",
+          "type": "string",
+        },
+      },
+      "required": [
+        "messages",
+      ],
+      "type": "object",
+    },
+    "safety": "action",
+  },
+  {
+    "description": "Rename a key (or every key under a parent) in all locales, and its usages in code unless \`usages: false\`. Without \`confirm\` it returns the plan (files to change, decisions, warnings); call again with \`confirm: true\` to apply it.",
+    "id": "x18n:rename_key",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "answers": {
+          "additionalProperties": {
+            "type": "string",
+          },
+          "description": "Decision id to option id, for decisions in the plan. Default: each decision's \`default\`.",
+          "propertyNames": {
+            "type": "string",
+          },
+          "type": "object",
+        },
+        "confirm": {
+          "description": "Apply the plan. Without it, the tool only returns the plan.",
+          "type": "boolean",
+        },
+        "from": {
+          "description": "Key (or parent of keys) to rename.",
+          "type": "string",
+        },
+        "project": {
+          "description": "Project name from \`x18n_status\`. Required only in a monorepo with several projects.",
+          "type": "string",
+        },
+        "to": {
+          "description": "New key.",
+          "type": "string",
+        },
+        "usages": {
+          "description": "Also rewrite usages in code. Default true.",
+          "type": "boolean",
+        },
+      },
+      "required": [
+        "from",
+        "to",
+      ],
+      "type": "object",
+    },
+    "safety": "destructive",
+  },
+  {
+    "description": "Delete a key (or every key under a parent) in all locales, or only in \`locales\`. Code is not changed. Without \`confirm\` it returns the plan; call again with \`confirm: true\` to apply it.",
+    "id": "x18n:delete_key",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "answers": {
+          "additionalProperties": {
+            "type": "string",
+          },
+          "description": "Decision id to option id, for decisions in the plan. Default: each decision's \`default\`.",
+          "propertyNames": {
+            "type": "string",
+          },
+          "type": "object",
+        },
+        "confirm": {
+          "description": "Apply the plan. Without it, the tool only returns the plan.",
+          "type": "boolean",
+        },
+        "key": {
+          "description": "Key (or parent of keys) to delete.",
+          "type": "string",
+        },
+        "locales": {
+          "description": "Only in these locales. Default: all.",
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "project": {
+          "description": "Project name from \`x18n_status\`. Required only in a monorepo with several projects.",
+          "type": "string",
+        },
+      },
+      "required": [
+        "key",
+      ],
+      "type": "object",
+    },
+    "safety": "destructive",
+  },
+  {
+    "description": "Find hard-coded strings in source files and propose a key, a message and a code replacement for each. Review the items (edit keys, drop items you do not want), then pass them to x18n_extract_apply.",
+    "id": "x18n:extract_plan",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "files": {
+          "description": "Only these files (globs relative to the project root). Default: every scanned file.",
+          "items": {
+            "type": "string",
+          },
+          "type": "array",
+        },
+        "project": {
+          "description": "Project name from \`x18n_status\`. Required only in a monorepo with several projects.",
+          "type": "string",
+        },
+      },
+      "required": [],
+      "type": "object",
+    },
+    "safety": "read",
+  },
+  {
+    "description": "Apply extraction items from x18n_extract_plan: adds the messages to the source locale and rewrites the code. Fails when a file changed since the plan was made; plan again then.",
+    "id": "x18n:extract_apply",
+    "inputSchema": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "properties": {
+        "items": {
+          "description": "Items from \`x18n_extract_plan\`, keys and replacements edited as needed; drop items to skip them.",
+          "items": {
+            "properties": {
+              "imports": {
+                "items": {
+                  "type": "string",
+                },
+                "type": "array",
+              },
+              "key": {
+                "type": "string",
+              },
+              "original": {
+                "type": "string",
+              },
+              "path": {
+                "type": "string",
+              },
+              "range": {
+                "properties": {
+                  "end": {
+                    "type": "number",
+                  },
+                  "start": {
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "start",
+                  "end",
+                ],
+                "type": "object",
+              },
+              "replacement": {
+                "type": "string",
+              },
+              "value": {
+                "type": "string",
+              },
+            },
+            "required": [
+              "path",
+              "range",
+              "original",
+              "key",
+              "value",
+              "replacement",
+              "imports",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "project": {
+          "description": "Project name from \`x18n_status\`. Required only in a monorepo with several projects.",
+          "type": "string",
+        },
+      },
+      "required": [
+        "items",
+      ],
+      "type": "object",
+    },
+    "safety": "action",
+  },
+]
+`;
+
+exports[`agent tools > plans a rename and applies it on confirm 1`] = `
+{
+  "applied": false,
+  "changes": [
+    {
+      "path": "src/locales/de.json",
+      "type": "edit",
+    },
+    {
+      "path": "src/locales/en.json",
+      "type": "edit",
+    },
+  ],
+  "decisions": [],
+  "keys": [
+    "gone",
+    "unused",
+  ],
+  "problems": [],
+  "revision": 3,
+  "warnings": [],
+}
+`;
+
+exports[`agent tools > plans an extraction 1`] = `
+{
+  "items": [],
+  "project": "vue-i18n",
+  "x18n": 1,
+}
+`;
+
+exports[`agent tools > reports status, keys, check and the translate prompt 1`] = `
+{
+  "projects": [
+    {
+      "diagnostics": {
+        "byCode": [
+          {
+            "code": "unused-key",
+            "count": 2,
+            "severity": "warning",
+          },
+          {
+            "code": "empty-translation",
+            "count": 1,
+            "severity": "warning",
+          },
+          {
+            "code": "missing-key",
+            "count": 1,
+            "severity": "error",
+          },
+          {
+            "code": "missing-translation",
+            "count": 1,
+            "severity": "warning",
+          },
+        ],
+        "errors": 1,
+        "infos": 0,
+        "warnings": 4,
+      },
+      "keys": 8,
+      "locales": [
+        {
+          "code": "en",
+          "displayName": "English",
+          "empty": 0,
+          "flag": "🇺🇸",
+          "missing": 0,
+          "percent": 100,
+          "total": 8,
+          "translated": 8,
+        },
+        {
+          "code": "de",
+          "displayName": "German",
+          "empty": 1,
+          "flag": "🇩🇪",
+          "missing": 1,
+          "percent": 75,
+          "total": 8,
+          "translated": 6,
+        },
+      ],
+      "name": "vue-i18n",
+      "namespaced": false,
+      "presets": [
+        "vue-i18n",
+        "general",
+      ],
+      "resources": 2,
+      "sourceLocale": "en",
+      "usages": 6,
+    },
+  ],
+}
+`;
+
+exports[`agent tools > reports status, keys, check and the translate prompt 2`] = `
+{
+  "keys": [
+    {
+      "key": "nav.about",
+      "values": {
+        "de": "",
+        "en": "About",
+      },
+    },
+    {
+      "key": "pages.about.title",
+      "values": {
+        "en": "About us",
+      },
+    },
+  ],
+  "total": 2,
+}
+`;
+
+exports[`agent tools > reports status, keys, check and the translate prompt 3`] = `
+{
+  "diagnostics": [
+    {
+      "code": "missing-translation",
+      "file": "src/locales/en.json",
+      "fixes": [
+        {
+          "ops": [
+            {
+              "key": "pages.about.title",
+              "locale": "de",
+              "type": "set",
+              "value": "",
+            },
+          ],
+          "title": "Add empty values in de",
+        },
+        {
+          "ops": [
+            {
+              "key": "pages.about.title",
+              "locale": "de",
+              "type": "set",
+              "value": "About us",
+            },
+          ],
+          "title": "Copy the source value",
+        },
+      ],
+      "key": "pages.about.title",
+      "locale": "en",
+      "message": ""pages.about.title" is missing in de.",
+      "project": "vue-i18n",
+      "range": {
+        "column": 8,
+        "end": 215,
+        "endColumn": 13,
+        "endLine": 15,
+        "line": 15,
+        "start": 210,
+      },
+      "severity": "warning",
+    },
+  ],
+  "summary": {
+    "errors": 0,
+    "warnings": 1,
+  },
+  "total": 1,
+}
+`;
+
+exports[`agent tools > reports status, keys, check and the translate prompt 4`] = `
+{
+  "total": 1,
+  "usages": [
+    {
+      "column": 16,
+      "dynamic": false,
+      "key": "nav.home",
+      "kind": "call",
+      "line": 13,
+      "path": "src/App.vue",
+      "possible": false,
+      "raw": "nav.home",
+      "snippet": {
+        "line": 11,
+        "lines": [
+          "    <h1>{{ $t('app.greeting', { name: 'x' }) }}</h1>",
+          "    <nav>",
+          "      <a>{{ t('nav.home') }}</a>",
+          "      <a v-t="'nav.about'" />",
+          "    </nav>",
+        ],
+      },
+    },
+  ],
+}
+`;
+
+exports[`agent tools > reports status, keys, check and the translate prompt 5`] = `
+{
+  "diagnostics": [],
+  "key": "nav.home",
+  "messages": [
+    {
+      "line": 7,
+      "locale": "en",
+      "path": "src/locales/en.json",
+      "placeholders": [],
+      "value": "Home",
+    },
+    {
+      "line": 7,
+      "locale": "de",
+      "path": "src/locales/de.json",
+      "placeholders": [],
+      "value": "Start",
+    },
+  ],
+  "missing": [],
+  "project": "vue-i18n",
+  "usages": [
+    {
+      "column": 16,
+      "dynamic": false,
+      "key": "nav.home",
+      "kind": "call",
+      "line": 13,
+      "path": "src/App.vue",
+      "possible": false,
+      "raw": "nav.home",
+      "snippet": {
+        "line": 11,
+        "lines": [
+          "    <h1>{{ $t('app.greeting', { name: 'x' }) }}</h1>",
+          "    <nav>",
+          "      <a>{{ t('nav.home') }}</a>",
+          "      <a v-t="'nav.about'" />",
+          "    </nav>",
+        ],
+      },
+    },
+  ],
+}
+`;
+
+exports[`agent tools > returns placeholder problems instead of writing 1`] = `
+{
+  "applied": false,
+  "changes": [
+    {
+      "path": "src/locales/de.json",
+      "type": "edit",
+    },
+  ],
+  "decisions": [],
+  "keys": [
+    "app.greeting",
+  ],
+  "problems": [
+    {
+      "extra": [],
+      "key": "app.greeting",
+      "locale": "de",
+      "missing": [
+        "name",
+      ],
+    },
+  ],
+  "revision": 2,
+  "warnings": [],
+}
+`;
+
+exports[`rpc functions > builds the translate prompt 1`] = `
+"# Translate 2 messages from en to de (German)
+
+## Rules
+
+- Keep every placeholder exactly as written (\`{name}\`, \`@:key\`); do not translate their names.
+- Keep markup tags and their attributes as they are.
+- Match the tone and wording of the existing messages in the target locale.
+- Do not translate glossary terms marked "do not translate".
+- de uses the plural categories one, other.
+
+## Existing de messages (style reference)
+
+- \`app.greeting\`: "Hello {name}" → "Hallo"
+- \`app.title\`: "My App" → "Meine App"
+- \`linked\`: "@:app.title!" → "@:app.title!"
+- \`nav.home\`: "Home" → "Start"
+- \`pages.home.title\`: "Welcome" → "Willkommen"
+
+## Messages
+
+### \`nav.about\`
+
+- Source: "About"
+- Used in \`src/App.vue:14\`:
+
+  \`\`\`
+        <a>{{ t('nav.home') }}</a>
+        <a v-t="'nav.about'" />
+      </nav>
+  \`\`\`
+
+### \`pages.about.title\`
+
+- Source: "About us"
+- Used in \`src/App.vue:16\`:
+
+  \`\`\`
+      </nav>
+      <p>{{ $t(\`pages.\${page}.title\`) }}</p>
+      <p>{{ $t('app.titel') }}</p>
+  \`\`\`
+
+## How to write results
+
+- Write a JSON file \`{ "de": { "<key>": "<translation>" } }\` and run \`x18n apply <file> --json\`, or run \`x18n set <key> --locale de --value <text>\` per key.
+- Then run \`x18n check --only placeholder-mismatch,invalid-syntax --locale de --json\` and fix the reported keys.
+- To find more work: \`x18n keys --missing de --json --limit 50\`.
+"
+`;
+
+exports[`rpc functions > details one key with usages and diagnostics 1`] = `
+{
+  "diagnostics": [
+    {
+      "code": "placeholder-mismatch",
+      "file": "src/locales/de.json",
+      "fixes": [],
+      "key": "app.greeting",
+      "locale": "de",
+      "message": ""app.greeting" in de has different placeholders than en: missing name.",
+      "project": "vue-i18n",
+      "range": {
+        "column": 6,
+        "end": 52,
+        "endColumn": 14,
+        "endLine": 4,
+        "line": 4,
+        "start": 44,
+      },
+      "severity": "error",
+    },
+  ],
+  "key": "app.greeting",
+  "messages": [
+    {
+      "line": 4,
+      "locale": "en",
+      "path": "src/locales/en.json",
+      "placeholders": [
+        {
+          "end": 12,
+          "start": 6,
+          "text": "{name}",
+        },
+      ],
+      "value": "Hello {name}",
+    },
+    {
+      "line": 4,
+      "locale": "de",
+      "path": "src/locales/de.json",
+      "placeholders": [],
+      "value": "Hallo",
+    },
+  ],
+  "missing": [],
+  "project": "vue-i18n",
+  "usages": [
+    {
+      "column": 16,
+      "dynamic": false,
+      "key": "app.greeting",
+      "kind": "call",
+      "line": 11,
+      "path": "src/App.vue",
+      "possible": false,
+      "raw": "app.greeting",
+      "snippet": {
+        "line": 9,
+        "lines": [
+          "<template>",
+          "  <header>",
+          "    <h1>{{ $t('app.greeting', { name: 'x' }) }}</h1>",
+          "    <nav>",
+          "      <a>{{ t('nav.home') }}</a>",
+        ],
+      },
+    },
+  ],
+}
+`;
+
+exports[`rpc functions > explains the project 1`] = `
+{
+  "projects": [
+    {
+      "config": {
+        "checks": {},
+        "extract": {},
+        "formats": {},
+        "glossary": [],
+        "ignoreKeys": [],
+        "ignoreLocales": [],
+        "keyStyle": "auto",
+        "name": "vue-i18n",
+        "namespace": {
+          "separator": ".",
+        },
+        "origins": {
+          "usage": "plugin:x18n:vue-i18n",
+        },
+        "pluginConfigs": {},
+        "resources": [],
+        "sourceLocale": "en",
+        "strict": false,
+        "usage": {
+          "calls": [
+            {
+              "callee": [
+                "$t",
+                "t",
+                "tc",
+                "$tc",
+                "te",
+                "$te",
+                "tm",
+                "$tm",
+                "i18n.t",
+                "i18n.global.t",
+                "$i18n.t",
+                "i18n.tc",
+                "i18n.te",
+              ],
+            },
+            {
+              "callee": "useI18n",
+              "factory": true,
+              "returns": [
+                "t",
+                "tc",
+                "te",
+                "tm",
+              ],
+            },
+          ],
+          "derivedKeys": [],
+          "exclude": [
+            "**/node_modules/**",
+            "**/.git/**",
+            "**/dist/**",
+            "**/build/**",
+            "**/coverage/**",
+            "**/.nuxt/**",
+            "**/.output/**",
+            "**/.next/**",
+            "**/.svelte-kit/**",
+            "**/*.d.ts",
+            "**/*.min.js",
+          ],
+          "ignoreCallees": [],
+          "include": [
+            "**/*",
+          ],
+          "keysInUse": [],
+          "regex": [],
+        },
+        "write": {
+          "keepFilled": false,
+          "sort": false,
+        },
+      },
+      "conflicts": [],
+      "duplicates": [],
+      "errors": [],
+      "finders": [
+        {
+          "id": "pattern",
+          "resources": [
+            "src/locales/de.json",
+            "src/locales/en.json",
+          ],
+        },
+        {
+          "id": "sfc-blocks",
+          "resources": [],
+        },
+      ],
+      "formats": [
+        {
+          "extensions": [
+            "json",
+          ],
+          "id": "json",
+          "resources": 2,
+        },
+        {
+          "extensions": [
+            "jsonc",
+          ],
+          "id": "jsonc",
+          "resources": 0,
+        },
+        {
+          "extensions": [
+            "json5",
+          ],
+          "id": "json5",
+          "resources": 0,
+        },
+        {
+          "extensions": [
+            "yml",
+            "yaml",
+          ],
+          "id": "yaml",
+          "resources": 0,
+        },
+        {
+          "extensions": [],
+          "id": "sfc-json",
+          "resources": 0,
+        },
+        {
+          "extensions": [],
+          "id": "sfc-json5",
+          "resources": 0,
+        },
+        {
+          "extensions": [],
+          "id": "sfc-yaml",
+          "resources": 0,
+        },
+      ],
+      "name": "vue-i18n",
+      "plugins": [
+        "x18n:manifests",
+        "x18n:format-json",
+        "x18n:format-jsonc",
+        "x18n:format-json5",
+        "x18n:format-yaml",
+        "x18n:finder-pattern",
+        "x18n:scanner-js",
+        "x18n:scanner-vue",
+        "x18n:scanner-svelte",
+        "x18n:scanner-regex",
+        "x18n:checks",
+        "x18n:reporters",
+        "x18n:vue-i18n",
+        "x18n:placeholders-braces-linked",
+        "x18n:finder-sfc-blocks",
+        "x18n:general",
+      ],
+      "presets": [
+        {
+          "name": "nuxt-i18n",
+          "reason": "not-detected",
+        },
+        {
+          "name": "vue-i18n",
+          "reason": "detected",
+        },
+        {
+          "name": "react-i18next",
+          "reason": "not-detected",
+        },
+        {
+          "name": "i18next",
+          "reason": "not-detected",
+        },
+        {
+          "name": "next-intl",
+          "reason": "not-detected",
+        },
+        {
+          "name": "react-intl",
+          "reason": "not-detected",
+        },
+        {
+          "name": "svelte-i18n",
+          "reason": "not-detected",
+        },
+        {
+          "name": "vscode-extension",
+          "reason": "not-detected",
+        },
+        {
+          "name": "general",
+          "reason": "detected",
+        },
+      ],
+      "scanners": [
+        {
+          "extensions": [
+            "js",
+            "jsx",
+            "mjs",
+            "cjs",
+            "ts",
+            "tsx",
+            "mts",
+            "cts",
+          ],
+          "files": 1,
+          "id": "js",
+        },
+        {
+          "extensions": [
+            "vue",
+          ],
+          "files": 1,
+          "id": "vue",
+        },
+        {
+          "extensions": [
+            "svelte",
+          ],
+          "files": 0,
+          "id": "svelte",
+        },
+        {
+          "extensions": [],
+          "files": 0,
+          "id": "regex",
+        },
+      ],
+      "skipped": [],
+    },
+  ],
+}
+`;
+
+exports[`rpc functions > lists extraction candidates 1`] = `[]`;
+
+exports[`rpc functions > lists keys with values and flags 1`] = `
+{
+  "locales": [
+    "en",
+    "de",
+  ],
+  "project": "vue-i18n",
+  "rows": [
+    {
+      "diagnostics": 1,
+      "key": "app.greeting",
+      "missing": [],
+      "unused": false,
+      "values": {
+        "de": "Hallo",
+        "en": "Hello {name}",
+      },
+    },
+    {
+      "diagnostics": 0,
+      "key": "app.title",
+      "missing": [],
+      "unused": false,
+      "values": {
+        "de": "Meine App",
+        "en": "My App",
+      },
+    },
+    {
+      "diagnostics": 1,
+      "key": "linked",
+      "missing": [],
+      "unused": true,
+      "values": {
+        "de": "@:app.title!",
+        "en": "@:app.title!",
+      },
+    },
+    {
+      "diagnostics": 1,
+      "key": "nav.about",
+      "missing": [
+        "de",
+      ],
+      "unused": false,
+      "values": {
+        "de": "",
+        "en": "About",
+      },
+    },
+    {
+      "diagnostics": 0,
+      "key": "nav.home",
+      "missing": [],
+      "unused": false,
+      "values": {
+        "de": "Start",
+        "en": "Home",
+      },
+    },
+    {
+      "diagnostics": 1,
+      "key": "pages.about.title",
+      "missing": [
+        "de",
+      ],
+      "unused": false,
+      "values": {
+        "en": "About us",
+      },
+    },
+    {
+      "diagnostics": 0,
+      "key": "pages.home.title",
+      "missing": [],
+      "unused": false,
+      "values": {
+        "de": "Willkommen",
+        "en": "Welcome",
+      },
+    },
+    {
+      "diagnostics": 1,
+      "key": "unused",
+      "missing": [],
+      "unused": true,
+      "values": {
+        "de": "Niemand",
+        "en": "Nobody uses me",
+      },
+    },
+  ],
+  "sourceLocale": "en",
+}
+`;
+
+exports[`rpc functions > lists usages and the analysis 1`] = `
+[
+  {
+    "column": 18,
+    "dynamic": false,
+    "key": "app.title",
+    "kind": "call",
+    "line": 5,
+    "path": "src/App.vue",
+    "possible": false,
+    "raw": "app.title",
+    "snippet": {
+      "line": 3,
+      "lines": [
+        "",
+        "const { t } = useI18n()",
+        "const title = t('app.title')",
+        "const page = 'home'",
+        "</script>",
+      ],
+    },
+  },
+  {
+    "column": 16,
+    "dynamic": false,
+    "key": "app.greeting",
+    "kind": "call",
+    "line": 11,
+    "path": "src/App.vue",
+    "possible": false,
+    "raw": "app.greeting",
+    "snippet": {
+      "line": 9,
+      "lines": [
+        "<template>",
+        "  <header>",
+        "    <h1>{{ $t('app.greeting', { name: 'x' }) }}</h1>",
+        "    <nav>",
+        "      <a>{{ t('nav.home') }}</a>",
+      ],
+    },
+  },
+  {
+    "column": 16,
+    "dynamic": false,
+    "key": "nav.home",
+    "kind": "call",
+    "line": 13,
+    "path": "src/App.vue",
+    "possible": false,
+    "raw": "nav.home",
+    "snippet": {
+      "line": 11,
+      "lines": [
+        "    <h1>{{ $t('app.greeting', { name: 'x' }) }}</h1>",
+        "    <nav>",
+        "      <a>{{ t('nav.home') }}</a>",
+        "      <a v-t="'nav.about'" />",
+        "    </nav>",
+      ],
+    },
+  },
+  {
+    "column": 16,
+    "dynamic": false,
+    "key": "nav.about",
+    "kind": "call",
+    "line": 14,
+    "path": "src/App.vue",
+    "possible": false,
+    "raw": "nav.about",
+    "snippet": {
+      "line": 12,
+      "lines": [
+        "    <nav>",
+        "      <a>{{ t('nav.home') }}</a>",
+        "      <a v-t="'nav.about'" />",
+        "    </nav>",
+        "    <p>{{ $t(\`pages.\${page}.title\`) }}</p>",
+      ],
+    },
+  },
+  {
+    "column": 15,
+    "dynamic": "prefix",
+    "key": "pages.",
+    "kind": "call",
+    "line": 16,
+    "path": "src/App.vue",
+    "possible": true,
+    "raw": "pages.",
+    "snippet": {
+      "line": 14,
+      "lines": [
+        "      <a v-t="'nav.about'" />",
+        "    </nav>",
+        "    <p>{{ $t(\`pages.\${page}.title\`) }}</p>",
+        "    <p>{{ $t('app.titel') }}</p>",
+        "    <p>{{ title }}</p>",
+      ],
+    },
+  },
+  {
+    "column": 15,
+    "dynamic": false,
+    "key": "app.titel",
+    "kind": "call",
+    "line": 17,
+    "path": "src/App.vue",
+    "possible": false,
+    "raw": "app.titel",
+    "snippet": {
+      "line": 15,
+      "lines": [
+        "    </nav>",
+        "    <p>{{ $t(\`pages.\${page}.title\`) }}</p>",
+        "    <p>{{ $t('app.titel') }}</p>",
+        "    <p>{{ title }}</p>",
+        "  </header>",
+      ],
+    },
+  },
+]
+`;
+
+exports[`rpc functions > lists usages and the analysis 2`] = `
+{
+  "diagnostics": [
+    {
+      "code": "missing-key",
+      "file": "src/App.vue",
+      "fixes": [
+        {
+          "ops": [
+            {
+              "key": "app.titel",
+              "locale": "en",
+              "type": "set",
+              "value": "",
+            },
+          ],
+          "title": "Add "app.titel" to en",
+        },
+      ],
+      "key": "app.titel",
+      "locale": "en",
+      "message": ""app.titel" is not defined in en.",
+      "project": "vue-i18n",
+      "range": {
+        "column": 15,
+        "end": 370,
+        "endColumn": 24,
+        "endLine": 17,
+        "line": 17,
+        "start": 361,
+      },
+      "severity": "error",
+    },
+    {
+      "code": "placeholder-mismatch",
+      "file": "src/locales/de.json",
+      "fixes": [],
+      "key": "app.greeting",
+      "locale": "de",
+      "message": ""app.greeting" in de has different placeholders than en: missing name.",
+      "project": "vue-i18n",
+      "range": {
+        "column": 6,
+        "end": 52,
+        "endColumn": 14,
+        "endLine": 4,
+        "line": 4,
+        "start": 44,
+      },
+      "severity": "error",
+    },
+    {
+      "code": "empty-translation",
+      "file": "src/locales/de.json",
+      "fixes": [],
+      "key": "nav.about",
+      "locale": "de",
+      "message": ""nav.about" is empty in de.",
+      "project": "vue-i18n",
+      "range": {
+        "column": 6,
+        "end": 110,
+        "endColumn": 11,
+        "endLine": 8,
+        "line": 8,
+        "start": 105,
+      },
+      "severity": "warning",
+    },
+    {
+      "code": "missing-translation",
+      "file": "src/locales/en.json",
+      "fixes": [
+        {
+          "ops": [
+            {
+              "key": "pages.about.title",
+              "locale": "de",
+              "type": "set",
+              "value": "",
+            },
+          ],
+          "title": "Add empty values in de",
+        },
+        {
+          "ops": [
+            {
+              "key": "pages.about.title",
+              "locale": "de",
+              "type": "set",
+              "value": "About us",
+            },
+          ],
+          "title": "Copy the source value",
+        },
+      ],
+      "key": "pages.about.title",
+      "locale": "en",
+      "message": ""pages.about.title" is missing in de.",
+      "project": "vue-i18n",
+      "range": {
+        "column": 8,
+        "end": 215,
+        "endColumn": 13,
+        "endLine": 15,
+        "line": 15,
+        "start": 210,
+      },
+      "severity": "warning",
+    },
+    {
+      "code": "unused-key",
+      "file": "src/locales/en.json",
+      "fixes": [
+        {
+          "ops": [
+            {
+              "key": "unused",
+              "locales": "all",
+              "type": "delete",
+            },
+          ],
+          "title": "Delete "unused" in every locale",
+        },
+      ],
+      "key": "unused",
+      "message": ""unused" is not used.",
+      "project": "vue-i18n",
+      "range": {
+        "column": 4,
+        "end": 249,
+        "endColumn": 10,
+        "endLine": 18,
+        "line": 18,
+        "start": 243,
+      },
+      "severity": "warning",
+    },
+    {
+      "code": "unused-key",
+      "file": "src/locales/en.json",
+      "fixes": [
+        {
+          "ops": [
+            {
+              "key": "linked",
+              "locales": "all",
+              "type": "delete",
+            },
+          ],
+          "title": "Delete "linked" in every locale",
+        },
+      ],
+      "key": "linked",
+      "message": ""linked" is not used.",
+      "project": "vue-i18n",
+      "range": {
+        "column": 4,
+        "end": 279,
+        "endColumn": 10,
+        "endLine": 19,
+        "line": 19,
+        "start": 273,
+      },
+      "severity": "warning",
+    },
+  ],
+  "project": "vue-i18n",
+  "undefinedUsages": [
+    {
+      "column": 15,
+      "dynamic": false,
+      "key": "app.titel",
+      "kind": "call",
+      "line": 17,
+      "path": "src/App.vue",
+      "possible": false,
+      "raw": "app.titel",
+      "snippet": {
+        "line": 15,
+        "lines": [
+          "    </nav>",
+          "    <p>{{ $t(\`pages.\${page}.title\`) }}</p>",
+          "    <p>{{ $t('app.titel') }}</p>",
+          "    <p>{{ title }}</p>",
+          "  </header>",
+        ],
+      },
+    },
+  ],
+  "unused": [
+    "linked",
+    "unused",
+  ],
+}
+`;
+
+exports[`rpc functions > plans, refuses placeholder problems, then applies and bumps the shared state 1`] = `
+{
+  "changes": [],
+  "decisions": [],
+  "keys": [
+    "app.greeting",
+  ],
+  "problems": [
+    {
+      "extra": [],
+      "key": "app.greeting",
+      "locale": "de",
+      "missing": [
+        "name",
+      ],
+    },
+  ],
+  "warnings": [],
+}
+`;
+
+exports[`rpc functions > summarizes projects 1`] = `
+{
+  "openInEditor": false,
+  "projects": [
+    {
+      "diagnostics": {
+        "byCode": [
+          {
+            "code": "unused-key",
+            "count": 2,
+            "severity": "warning",
+          },
+          {
+            "code": "empty-translation",
+            "count": 1,
+            "severity": "warning",
+          },
+          {
+            "code": "missing-key",
+            "count": 1,
+            "severity": "error",
+          },
+          {
+            "code": "missing-translation",
+            "count": 1,
+            "severity": "warning",
+          },
+          {
+            "code": "placeholder-mismatch",
+            "count": 1,
+            "severity": "error",
+          },
+        ],
+        "errors": 2,
+        "infos": 0,
+        "warnings": 4,
+      },
+      "keys": 8,
+      "locales": [
+        {
+          "code": "en",
+          "displayName": "English",
+          "empty": 0,
+          "flag": "🇺🇸",
+          "missing": 0,
+          "percent": 100,
+          "total": 8,
+          "translated": 8,
+        },
+        {
+          "code": "de",
+          "displayName": "German",
+          "empty": 1,
+          "flag": "🇩🇪",
+          "missing": 1,
+          "percent": 75,
+          "total": 8,
+          "translated": 6,
+        },
+      ],
+      "name": "vue-i18n",
+      "namespaced": false,
+      "presets": [
+        "vue-i18n",
+        "general",
+      ],
+      "resources": 2,
+      "sourceLocale": "en",
+      "usages": 6,
+    },
+  ],
+}
+`;

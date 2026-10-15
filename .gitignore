@@ -20,3 +20,5 @@ temp
 packages/vscode/src/generated
 packages/vscode/.vsce
 packages/core/schema
+test-results
+playwright-report

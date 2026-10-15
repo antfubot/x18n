@@ -13,7 +13,7 @@ const alias = [
   { find: /^@x18n\/ui$/, replacement: src('ui/src/node/index.ts') },
 ]
 
-const packages = ['builtins', 'cli', 'core', 'lsp', 'node']
+const packages = ['builtins', 'cli', 'core', 'lsp', 'node', 'ui', 'vscode']
 
 export default defineConfig({
   resolve: { alias },
