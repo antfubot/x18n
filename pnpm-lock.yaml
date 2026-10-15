@@ -541,6 +541,9 @@ importers:
       jiti:
         specifier: catalog:deps
         version: 2.7.0
+      jsonc-parser:
+        specifier: catalog:deps
+        version: 3.3.1
       tinyglobby:
         specifier: catalog:deps
         version: 0.2.17

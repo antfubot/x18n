@@ -159,6 +159,8 @@ export interface Commands {
   readonly delete: 'x18n.delete'
   readonly renamePrefix: 'x18n.renamePrefix'
   readonly extract: 'x18n.extract'
+  /** `{ uri: <folder> }` -> `{ files: { path, content }[], notes, removable }`; nothing is written. */
+  readonly migrateI18nAlly: 'x18n.migrateI18nAlly'
 }
 
 export const commands: Commands = {
@@ -166,4 +168,5 @@ export const commands: Commands = {
   delete: 'x18n.delete',
   renamePrefix: 'x18n.renamePrefix',
   extract: 'x18n.extract',
+  migrateI18nAlly: 'x18n.migrateI18nAlly',
 }

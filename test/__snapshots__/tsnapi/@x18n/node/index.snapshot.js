@@ -11,6 +11,7 @@ export async function importModule(_) {}
 export async function loadConfigFile(_) {}
 export async function loadWorkspace(_) {}
 export async function loadYamlPlugin(_) {}
+export async function migrateI18nAlly(_, _) {}
 // #endregion
 
 // #region Variables

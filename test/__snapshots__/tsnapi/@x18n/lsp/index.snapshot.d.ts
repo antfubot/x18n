@@ -12,6 +12,7 @@ export interface Commands {
   readonly delete: "x18n.delete";
   readonly renamePrefix: "x18n.renamePrefix";
   readonly extract: "x18n.extract";
+  readonly migrateI18nAlly: "x18n.migrateI18nAlly";
 }
 export interface Decoration {
   readonly range: Range;

@@ -35,6 +35,7 @@
     "chokidar": "catalog:deps",
     "ignore": "catalog:deps",
     "jiti": "catalog:deps",
+    "jsonc-parser": "catalog:deps",
     "tinyglobby": "catalog:deps",
     "yaml": "catalog:deps"
   }

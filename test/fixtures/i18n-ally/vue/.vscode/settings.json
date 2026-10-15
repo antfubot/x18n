@@ -1,0 +1,16 @@
+{
+  // i18n-ally settings of a Vue project
+  "editor.tabSize": 2,
+  "i18n-ally.localesPaths": ["lang"],
+  "i18n-ally.namespace": true,
+  "i18n-ally.pathMatcher": "{locale}/{namespaces}.json",
+  "i18n-ally.enabledFrameworks": ["vue", "general"],
+  "i18n-ally.sourceLanguage": "en",
+  "i18n-ally.displayLanguage": "de",
+  "i18n-ally.keystyle": "nested",
+  "i18n-ally.keysInUse": ["dynamic.*"],
+  "i18n-ally.annotationInPlace": false,
+  "i18n-ally.translate.engines": ["google"],
+  "i18n-ally.extract.keygenStyle": "snake_case",
+  "i18n-ally.localeCountryMap": { "en": "gb" }
+}

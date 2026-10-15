@@ -24,7 +24,7 @@ import { relative, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { extractItems, findCandidates } from '@x18n/builtins/extractors'
 import { createLineIndex, createOverlayHost, isX18nError, renderPrompt } from '@x18n/core'
-import { loadWorkspace } from '@x18n/node'
+import { loadWorkspace, migrateI18nAlly } from '@x18n/node'
 import {
   CodeActionKind,
   CompletionItemKind,
@@ -575,6 +575,8 @@ class Server {
     const input = arg as { project?: string, key?: string, locale?: string, value?: string, to?: string, uri?: string } // client-supplied; fields checked below
     if (params.command === commands.extract && typeof input.uri === 'string')
       return this.extractFile(input.uri)
+    if (params.command === commands.migrateI18nAlly && typeof input.uri === 'string')
+      return migrateI18nAlly(fileURLToPath(input.uri))
     const entry = this.projects.find(p => p.name === input.project) ?? this.projects[0]
     if (!entry || typeof input.key !== 'string')
       return null

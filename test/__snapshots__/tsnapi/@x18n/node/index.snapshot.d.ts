@@ -20,6 +20,18 @@ export interface LoadOptions {
   readonly wrapHost?: ((_: NodeHost) => Host) | undefined;
   readonly scanFiles?: ((_: readonly SourceFile[]) => Promise<readonly ScanResult[]>) | undefined;
 }
+export interface MigrateOptions {
+  readonly format?: "ts" | "yml" | "json" | undefined;
+}
+export interface MigrationFile {
+  readonly path: string;
+  readonly content: string;
+}
+export interface MigrationResult {
+  readonly files: readonly MigrationFile[];
+  readonly notes: readonly string[];
+  readonly removable: readonly string[];
+}
 export interface NodeHost extends Host {
   readonly flush: () => Promise<void>;
 }
@@ -44,6 +56,7 @@ export declare function importModule(_: string): Promise<unknown>;
 export declare function loadConfigFile(_: string): Promise<UserConfig>;
 export declare function loadWorkspace(_: LoadOptions): Promise<Workspace>;
 export declare function loadYamlPlugin(_: string): Promise<Plugin | Preset>;
+export declare function migrateI18nAlly(_: string, _?: MigrateOptions): Promise<MigrationResult>;
 // #endregion
 
 // #region Variables

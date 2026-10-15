@@ -1,0 +1,7 @@
+languageIds:
+  - php
+usageMatchRegex:
+  - "[^\\w\\d]__\\(['\"]({key})['\"]"
+refactorTemplates:
+  - "__('$1')"
+monopoly: true

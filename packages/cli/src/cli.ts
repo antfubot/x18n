@@ -8,6 +8,7 @@ import { apply, fill, format, remove, rename, set } from './commands/change'
 import { check } from './commands/check'
 import { extract } from './commands/extract'
 import { doctor, get, keys, locales, status, usages } from './commands/look'
+import { migrate } from './commands/migrate'
 import { prompt } from './commands/prompt'
 import { eject, init, schema } from './commands/setup'
 import { errorInfo, exitCodeOf, printJson, stdinArg } from './context'
@@ -145,6 +146,11 @@ export function createCli(): CAC {
     .option('--format <format>', 'ts (default), yml or json')
     .option('--force', 'Replace an existing config')
     .action(run('init', init))
+  cli.command('migrate <source>', 'Convert i18n-ally settings: `migrate i18n-ally`')
+    .option('--format <format>', 'ts (default), yml or json')
+    .option('--dry-run', 'Print the files instead of writing')
+    .option('--force', 'Replace an existing config')
+    .action(run('migrate', migrate))
   cli.command('schema [name]', 'Print a JSON Schema: config (default) or plugin').action(run('schema', schema))
   cli.command('plugin <action> <file>', 'Plugin tools: `plugin eject <file.yml>` prints the TS equivalent')
     .action(run('plugin eject', async (action: string, file: string, options: GlobalOptions) => {
