@@ -39,18 +39,18 @@ These documents are the plan. Each document owns one area. Where code and plan d
 
 | Milestone | Title | Release | Status |
 | --- | --- | --- | --- |
-| M0 | Plan and monorepo scaffold | 1.0 | IN PROGRESS |
-| M1 | Core engine (read path) | 1.0 | TODO |
-| M2 | Node host, config loading, CLI read commands, `x18n check` | 1.0 | TODO |
-| M3 | Usage scanning and analysis | 1.0 | TODO |
-| M4 | Edits and write commands | 1.0 | TODO |
-| M5 | Language server and minimal VS Code client | 1.0 | TODO |
-| M6 | Agent surface (prompts, MCP, skill) | 1.0 | TODO |
-| M7 | UI: dev server, static build, VS Code panel | 1.0 | TODO |
-| M8 | VS Code extension complete | 1.0 | TODO |
-| M9 | Extraction | 1.0 | TODO |
-| M10 | i18n-ally migration | 1.0 | TODO |
-| M11 | Performance (1.0 gate) | 1.0 | TODO |
+| M0 | Plan and monorepo scaffold | 1.0 | DONE |
+| M1 | Core engine (read path) | 1.0 | DONE |
+| M2 | Node host, config loading, CLI read commands, `x18n check` | 1.0 | DONE |
+| M3 | Usage scanning and analysis | 1.0 | DONE |
+| M4 | Edits and write commands | 1.0 | DONE |
+| M5 | Language server and minimal VS Code client | 1.0 | DONE |
+| M6 | Agent surface (prompts, MCP, skill) | 1.0 | DONE |
+| M7 | UI: dev server, static build, VS Code panel | 1.0 | DONE |
+| M8 | VS Code extension complete | 1.0 | DONE |
+| M9 | Extraction | 1.0 | DONE |
+| M10 | i18n-ally migration | 1.0 | DONE |
+| M11 | Performance (1.0 gate) | 1.0 | DONE |
 | M12 | Reviews | 1.x | TODO |
 | M13 | Typegen | 1.x | TODO |
 | M14 | In-browser workspace and docs playground | 1.x | TODO |

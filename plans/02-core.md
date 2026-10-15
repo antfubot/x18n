@@ -139,7 +139,7 @@ Incremental rules:
 
 - Each index entry stores a content hash. A parse or scan is skipped when the hash matches, which also makes the persistent cache work across runs.
 - Analysis is lazy and memoized per revision. `project.revision` goes up on every change.
-- Scanning SHOULD be able to run in parallel. Core exposes `scanFile(path, text)` as a pure function of config and text, so the Node host can spread it over worker threads in M11 without changing core.
+- Scanning runs in-process; the budgets pass without worker threads ([D30](./decisions.md#d30---no-worker-threads-in-10)).
 
 ### `project.explain()`
 

@@ -122,7 +122,7 @@ interface ParseResult {
 type MessageOp
   = | { type: 'set', path: readonly string[], value: MessageLeaf }
     | { type: 'delete', path: readonly string[] }
-    | { type: 'rename', from: readonly string[], to: readonly string[] }
+// Renames are planned by core: in-place key text edits, or delete + set (D33).
 ```
 
 A format with neither `edit` nor `serialize` is read-only. Key style (`nested` vs `flat`) is applied by core before calling `edit` or `serialize`, so formats only see paths.
@@ -244,7 +244,7 @@ interface PlaceholderSyntax {
 ## Order and conflicts
 
 - The final plugin list is: built-in core plugins, then detected or listed presets (flattened depth-first), then user plugins. Within that, `enforce: 'pre'` plugins come first and `'post'` last.
-- For `formats` and `scanners`, the first plugin that claims an extension wins, unless the config maps it explicitly (`formats: { '.json': 'jsonc' }`). The losers are listed in `explain()`.
+- For `formats`, the first plugin that claims an extension wins, unless the config maps it explicitly (`formats: { json: 'jsonc' }`). The losers are listed in `explain()`. Every scanner that claims an extension runs, and usages are merged (D29).
 - For `localeFinders`, `checks` and `reporters`, all run. Ids MUST be unique; a duplicate id is a config error (`X18N1002`) unless the later one sets `override: true`.
 - Hooks (`config`, `normalizeKey`, `transformResource`) run in order. `normalizeKey` stops at the first plugin that returns a value.
 

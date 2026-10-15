@@ -156,3 +156,47 @@ Each entry: what was decided, what else was considered, and why. New decisions g
 - Params are typed where the library allows.
 - One committed `x18n.d.ts`, opt-in, TS projects only.
 - It runs from the CLI and the LSP, guarded by the `typegen-stale` check. See [18-typegen.md](./18-typegen.md).
+
+## D26 - Domain names are plain string aliases
+
+- Decided: `LocaleCode`, `KeyString` and `ResourceId` are `string` aliases, not branded types.
+- Considered: branded strings as sketched in [02-core.md](./02-core.md).
+- Why: brands force a cast at every boundary (CLI input, JSON, LSP). Keys are compared by string, and `project.parseKey` turns user input into the canonical form.
+
+## D27 - Namespaces: merged prefix by default, `ns:key` with a separator
+
+- Decided: with the default `namespace.separator` `.`, a path namespace (`locales/en/pages/home.json`) becomes a key prefix (`pages.home.title`), as i18n-ally did. A preset or config that sets another separator (i18next `:`) keeps namespaces apart (`common:save`); keys without one get `namespace.default`. A key written with an explicit namespace ignores the scope's `keyPrefix`.
+- Why: vue-i18n style projects never write namespaces in code; i18next style projects always do.
+
+## D28 - Config and plugins load through jiti
+
+- Decided: `@x18n/node` finds the config file itself and imports TS and JS with jiti; YAML and JSON are parsed directly.
+- Considered: unconfig.
+- Why: the lookup is a list of six names; jiti is the loader unconfig would use anyway, and the same loader imports TS plugins.
+
+## D29 - Every scanner that claims an extension runs
+
+- Decided: unlike formats (first claim wins), all scanners for an extension run and their usages are merged by range.
+- Why: a YAML plugin's `scanners.regex` for `.ts` files must add to the `js` scanner, not lose to it.
+
+## D30 - No worker threads in 1.0
+
+- Decided: scanning stays in-process; the persistent cache, an incremental usage index and memoized analysis meet the budgets.
+- Measured on the benchmark fixture (`pnpm bench`): `x18n check` cold 3.1 s, warm 1.4 s, LSP re-scan and diagnostics 16 ms, memory 252 MB.
+- Why: the budgets of [15-quality.md](./15-quality.md) pass without them, and the scan seam would be code nobody uses.
+
+## D31 - MCP through devframe agent tools; MCP prompts later
+
+- Decided: tools are registered with devframe's agent API under the names of [10-agents.md](./10-agents.md). The `translate`, `review` and `extract` MCP prompts wait for devframe prompt support; agents use the `x18n_translate_prompt` tool meanwhile.
+- `x18n/openUi` returns devframe's one-time code as the token; clients open `url#devframe_otp=<token>` (plus `&route=/keys/<key>` for the key editor).
+
+## D32 - `execute: true` ships with the JS/TS format
+
+- Decided: in 1.0, `execute: true` marks matching resources read-only. Running JS/TS locale files arrives with the tier 2 `js`/`ts` format (M15), which also reads static `export default { ... }` files.
+- Why: there is no tier 1 format for JS/TS locale files to execute through.
+
+## D33 - Renames edit key text in place
+
+- Decided: formats get only `set` and `delete` ops. When a rename changes only the last segment of a key in the same file, the planner replaces the key text in place, which keeps the entry's position, comments and layout; other renames become delete plus set.
+- Why: in-place key edits are format independent for plain segments, so formats stay small.
+

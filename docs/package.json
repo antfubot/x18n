@@ -3,8 +3,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "nuxt dev --host",
-    "docs:build": "nuxt build",
+    "generate": "tsx --tsconfig ../tsconfig.json scripts/generate.ts",
+    "dev": "pnpm run generate && nuxt dev --host",
+    "docs:build": "pnpm run generate && nuxt build",
     "docs:serve": "nuxt preview"
   },
   "dependencies": {

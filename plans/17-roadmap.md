@@ -145,6 +145,16 @@ Each milestone is one or a few PRs. A milestone is done when its exit criteria p
 
 **Exit:** the budgets in [15-quality.md](./15-quality.md) pass on the benchmark fixture; CI fails on a regression over 20%.
 
+## Follow-ups found while building 1.0
+
+These did not block the 1.0 exit criteria and move to 1.x:
+
+- MCP prompts `translate`, `review`, `extract` once devframe supports prompts (D31).
+- UI: choose and reorder locale columns, bulk actions, shiki highlighting of snippets.
+- Parity tests against the upstream i18n-ally example projects (the fixtures under `test/fixtures/` cover each tier 1 preset).
+- The TS 7 `registerLspMiddleware` path in the extension is guarded but untested until the API ships.
+- `execute: true` with the JS/TS format (D32).
+
 ## 1.0 release
 
 Packages and the extension share one version (`bumpp -r`). Every release needs explicit human approval.
