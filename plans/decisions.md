@@ -200,3 +200,10 @@ Each entry: what was decided, what else was considered, and why. New decisions g
 - Decided: formats get only `set` and `delete` ops. When a rename changes only the last segment of a key in the same file, the planner replaces the key text in place, which keeps the entry's position, comments and layout; other renames become delete plus set.
 - Why: in-place key edits are format independent for plain segments, so formats stay small.
 
+
+## D34 - Every i18n-ally framework is a built-in preset
+
+- Decided: the presets cover every framework i18n-ally supports, detected the same way (`package.json`, `composer.json`, `pubspec.yaml`, `Gemfile`; `manifest.json` with `default_locale` for Chrome extensions). `php-gettext` applies only when listed, as in i18n-ally. JS libraries use call specs for the AST scanners; other languages (PHP, Ruby, Dart, Handlebars, Liquid, XML) use i18n-ally's regexes. The po, properties, ftl, ini, php and static JS/TS formats ship with them.
+- Resource defaults of detected presets add up; a user `resources` replaces them; when they match no file, x18n guesses locale directories as without a config.
+- `react-i18next` is no longer exclusive: shared plugins apply once by name. `laravel` stays exclusive (i18n-ally `monopoly`).
+- Why: users moving from i18n-ally expect their stack to work without a config. This pulls part of M15 into 1.0; tier 2 items i18n-ally never had (paraglide, typesafe-i18n, ARB, XLIFF and the other XML formats) stay in M15.
