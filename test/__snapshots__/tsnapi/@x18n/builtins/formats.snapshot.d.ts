@@ -8,8 +8,14 @@ export interface JsonOptions {
 // #endregion
 
 // #region Functions
+export declare function ecmascript(): Plugin;
+export declare function ftl(): Plugin;
+export declare function ini(): Plugin;
 export declare function json(_?: JsonOptions): Plugin;
 export declare function json5(): Plugin;
 export declare function jsonc(_?: JsonOptions): Plugin;
+export declare function php(): Plugin;
+export declare function po(): Plugin;
+export declare function properties(): Plugin;
 export declare function yaml(): Plugin;
 // #endregion
