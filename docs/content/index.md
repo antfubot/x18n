@@ -100,7 +100,7 @@ Every surface reads the same config and reports the same diagnostics. The CLI in
   Presets
 
   #description
-  Detected from your dependencies: vue-i18n, @nuxtjs/i18n, i18next, react-i18next, next-intl, react-intl, svelte-i18n and VS Code extensions.
+  One preset for each framework of i18n-ally, detected from your dependencies: vue-i18n, i18next, next-intl, ngx-translate, Laravel, Rails, Flutter and 21 others.
   :::
 
   :::landing-feature-card{icon="i-lucide-puzzle" to="/plugins"}

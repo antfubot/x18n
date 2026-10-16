@@ -9,19 +9,41 @@ A preset is a group of plugins for one i18n library. It tells x18n which calls a
 | --- | --- | --- |
 | [`nuxt-i18n`](/presets/nuxt-i18n) | @nuxtjs/i18n | `@nuxtjs/i18n`, `nuxt-i18n` |
 | [`vue-i18n`](/presets/vue-i18n) | vue-i18n | `vue-i18n`, `vuex-i18n`, `petite-vue-i18n`, `vue-i18n-bridge`, `@intlify/*` |
+| [`fluent-vue`](/presets/fluent-vue) | fluent-vue | `fluent-vue`, `fluent-vue-loader`, `rollup-plugin-fluent-vue`, `unplugin-fluent-vue` |
+| [`i18next-shopify`](/presets/i18next-shopify) | i18next-shopify | `@shopify/i18next-shopify` |
 | [`react-i18next`](/presets/react-i18next) | react-i18next | `react-i18next`, `next-i18next` |
+| [`next-translate`](/presets/next-translate) | next-translate | `next-translate` |
+| [`next-international`](/presets/next-international) | next-international | `next-international` |
 | [`i18next`](/presets/i18next) | i18next | `i18next` |
 | [`next-intl`](/presets/next-intl) | next-intl | `next-intl`, `use-intl` |
 | [`react-intl`](/presets/react-intl) | react-intl (FormatJS) | `react-intl`, `@formatjs/*` |
-| [`svelte-i18n`](/presets/svelte-i18n) | svelte-i18n | `svelte-i18n` |
+| [`svelte-i18n`](/presets/svelte-i18n) | svelte-i18n, sveltekit-i18n | `svelte-i18n`, `sveltekit-i18n`, `@sveltekit-i18n/base` |
+| [`ngx-translate`](/presets/ngx-translate) | ngx-translate | `@ngx-translate/core` |
+| [`transloco`](/presets/transloco) | Transloco | `@jsverse/transloco`, `@ngneat/transloco` |
+| [`lingui`](/presets/lingui) | Lingui | `@lingui/core`, `@lingui/react`, `@lingui/macro` |
+| [`ember-intl`](/presets/ember-intl) | ember-intl | `ember-intl` |
+| [`polyglot`](/presets/polyglot) | Polyglot.js | `node-polyglot` |
+| [`globalize`](/presets/globalize) | Globalize | `globalize` |
+| [`i18n-tag`](/presets/i18n-tag) | es2015-i18n-tag | `es2015-i18n-tag` |
+| [`i18n-js`](/presets/i18n-js) | i18n-js | `i18n-js` |
+| [`ui5`](/presets/ui5) | SAPUI5, OpenUI5 | `@ui5/cli` |
+| [`chrome-extension`](/presets/chrome-extension) | Chrome and WebExtension i18n | `default_locale` in `manifest.json`, `src/manifest.json` or `public/manifest.json` |
 | [`vscode-extension`](/presets/vscode-extension) | VS Code extension API | `vscode`, `@types/vscode` |
+| [`laravel`](/presets/laravel) | Laravel | `laravel/framework` in `composer.json` |
+| [`php-joomla`](/presets/php-joomla) | Joomla | `joomla/application`, `joomla/cms` in `composer.json` |
+| [`php-gettext`](/presets/php-gettext) | gettext in PHP | never: list it in `presets` |
+| [`ruby-rails`](/presets/ruby-rails) | Ruby on Rails | `rails`, `rails-i18n`, `railties` in `Gemfile` |
+| [`jekyll`](/presets/jekyll) | jekyll-multiple-languages-plugin | `jekyll-multiple-languages-plugin` in `Gemfile` |
+| [`flutter`](/presets/flutter) | flutter_i18n | `flutter_i18n` in `pubspec.yaml` |
 | [`general`](/presets/general) | none | always |
 
 ## Detection
 
-With the default `presets: 'auto'`, x18n tests each preset in the order of the table. A preset applies when the project depends on one of the listed packages. x18n reads the dependencies, dev dependencies and peer dependencies in `package.json`, and the dependencies in `composer.json`, `pubspec.yaml` and `Gemfile`. The manifests in the parent directories, up to the git root, count too.
+With the default `presets: 'auto'`, x18n tests each preset in the order of the table. Most presets apply when the project depends on one of the listed packages. x18n reads the dependencies, dev dependencies and peer dependencies in `package.json`, and the dependencies in `composer.json`, `pubspec.yaml` and `Gemfile`. The manifests in the parent directories, up to the git root, count too.
 
-A preset can be exclusive. When an exclusive preset applies, x18n tests no preset after it. `react-i18next` is exclusive, because it includes everything that the `i18next` preset adds.
+More than one preset can apply. Some presets include the plugins of another preset: `react-i18next` includes everything of `i18next`, and `i18next-shopify` includes everything of `react-i18next`. When two applied presets share a plugin, x18n adds that plugin one time.
+
+A preset can be exclusive. When an exclusive preset applies, x18n tests no preset after it. `laravel` and `php-gettext` are exclusive. `php-gettext` has no detection, so it applies only when you list it.
 
 Run `x18n doctor` to see the result. Each preset shows as `detected`, `not-detected`, `listed`, or `after-exclusive`.
 
@@ -46,7 +68,7 @@ presets: [vue-i18n, general]
 
 ::
 
-In TS, the presets are functions from `x18n/presets`: `nuxtI18n`, `vueI18n`, `reactI18next`, `i18next`, `nextIntl`, `reactIntl`, `svelteI18n`, `vscodeExtension` and `general`. In YAML and JSON, use the names in the first column of the table. `presets: []` turns every preset off.
+In TS, the presets are functions from `x18n/presets`: `nuxtI18n`, `vueI18n`, `fluentVue`, `i18nextShopify`, `reactI18next`, `nextTranslate`, `nextInternational`, `i18next`, `nextIntl`, `reactIntl`, `svelteI18n`, `ngxTranslate`, `transloco`, `lingui`, `emberIntl`, `polyglot`, `globalize`, `i18nTag`, `i18nJs`, `ui5`, `chromeExtension`, `vscodeExtension`, `laravel`, `phpJoomla`, `phpGettext`, `rubyRails`, `jekyll`, `flutter` and `general`. In YAML and JSON, use the names in the first column of the table. `presets: []` turns every preset off.
 
 ## What a preset adds
 
@@ -59,21 +81,34 @@ Each preset page lists what the preset adds:
 
 Your config adds to these defaults. For example, `usage.calls` in the config adds callees to the ones of the preset. See [How x18n merges the config](/guide/configuration#how-x18n-merges-the-config).
 
+## Resource defaults
+
+The resource patterns of all applied presets add up. For example, a project with `next-intl` and `ngx-translate` uses the patterns of both presets.
+
+- If your config has `resources`, x18n uses only your patterns. They replace the patterns of every preset.
+- If the patterns of the presets match no file, x18n guesses the locale directories, as it does without presets. See [Locale files](/guide/configuration#locale-files).
+- A pattern without `{locale}`, such as `webapp/i18n/i18n.properties`, holds the source locale. To give it another locale, set `locale` on the resource.
+
 ## Placeholders
 
 A placeholder syntax tells x18n how placeholders look in messages. The [`placeholder-mismatch`](/checks/placeholder-mismatch) check and `x18n apply` compare the placeholders of each translation with the source value. Translate prompts list them.
 
 | Syntax | Example | Used by |
 | --- | --- | --- |
-| braces | `{name}` | vue-i18n, nuxt-i18n, vscode-extension |
+| braces | `{name}`, `{0}` | vue-i18n, nuxt-i18n, i18next-shopify, next-international, ui5, vscode-extension, flutter |
 | linked | `@:key`, `@.lower:key` | vue-i18n, nuxt-i18n |
-| double braces | `{{name}}`, `{{name, format}}`, `{{- raw}}` | i18next, react-i18next |
-| nesting | `$t(key)` | i18next, react-i18next |
-| ICU | `{name}`, `{count, plural, one {# item} other {# items}}` | next-intl, react-intl, svelte-i18n |
+| double braces | `{{name}}`, `{{name, format}}`, `{{- raw}}` | i18next, react-i18next, i18next-shopify, next-translate, ngx-translate, transloco |
+| nesting | `$t(key)` | i18next, react-i18next, i18next-shopify |
+| ICU | `{name}`, `{count, plural, one {# item} other {# items}}` | next-intl, react-intl, svelte-i18n, lingui, ember-intl, globalize |
+| fluent | `{ $name }` | fluent-vue |
+| percent braces | `%{name}` | polyglot, i18n-js, ruby-rails |
+| printf | `%s`, `%d`, `%1$s` | php-joomla, php-gettext |
+| colon | `:name` | laravel |
+| dollars | `$name$` | chrome-extension |
 
 A linked message (`@:key`) and a nesting placeholder (`$t(key)`) name another key. That key then counts as used. The [`invalid-syntax`](/checks/invalid-syntax) check reports a linked message whose key does not exist, and ICU messages that do not parse or that lack an `other` case.
 
-`@x18n/builtins/placeholders` also has `percentBraces` (`%{name}`) and `printf` (`%s`, `%1$s`) for plugins. A [YAML plugin](/plugins/yaml#sections-placeholders) can declare a shape such as `%{name}`.
+Plugins can use all of these syntaxes from `@x18n/builtins/placeholders`. A [YAML plugin](/plugins/yaml#sections-placeholders) can declare a shape such as `%{name}`.
 
 ## Extraction templates
 

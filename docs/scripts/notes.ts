@@ -170,7 +170,7 @@ export const configNotes: { readonly [field: string]: string } = {
   'SerializableConfig.sourceLocale': 'The locale that is the source of truth for checks, prompts and go to definition.',
   'SerializableConfig.ignoreLocales': 'Locale codes to leave out, as written in paths.',
   'SerializableConfig.plugins': 'Plugins to add: a package name, a path to a module or to a YAML plugin, or `[specifier, options]`. Paths are relative to the config file.',
-  'SerializableConfig.resources': 'Where the locale files are. Each pattern feeds the `pattern` locale finder. Without patterns, presets add theirs, and x18n then looks for directories named like `locales`.',
+  'SerializableConfig.resources': 'Where the locale files are. Each pattern feeds the `pattern` locale finder. Without patterns, the patterns of all applied presets add up. If they match no file, x18n looks for directories named like `locales`.',
   'SerializableConfig.namespace': 'How keys and namespaces relate in code.',
   'SerializableConfig.usage': 'How x18n finds usages in source files.',
   'SerializableConfig.write': 'How x18n writes locale files.',

@@ -107,15 +107,35 @@ When a folder has `i18n-ally.*` settings in `.vscode/settings.json` and no `x18n
 | --- | --- |
 | `vue`, `vue-sfc`, `vuex` | `vue-i18n` |
 | `nuxt` | `nuxt-i18n` |
+| `fluent-vue`, `fluent-vue-sfc` | `fluent-vue` |
 | `react` | `react-intl` |
 | `react-i18next`, `next-i18next` | `react-i18next` |
 | `i18next` | `i18next` |
+| `i18next-shopify` | `i18next-shopify` |
 | `next-intl` | `next-intl` |
+| `next-international` | `next-international` |
+| `next-translate` | `next-translate` |
 | `svelte` | `svelte-i18n` |
+| `ngx-translate` | `ngx-translate` |
+| `transloco` | `transloco` |
+| `lingui` | `lingui` |
+| `ember` | `ember-intl` |
+| `polyglot` | `polyglot` |
+| `globalize` | `globalize` |
+| `i18n-tag` | `i18n-tag` |
+| `i18n-js` | `i18n-js` |
+| `ui5` | `ui5` |
+| `chrome-ext` | `chrome-extension` |
 | `vscode` | `vscode-extension` |
+| `laravel` | `laravel` |
+| `php-joomla` | `php-joomla` |
+| `php-gettext` | `php-gettext` |
+| `ruby-rails` | `ruby-rails` |
+| `jekyll` | `jekyll` |
+| `flutter` | `flutter` |
 | `general`, `custom` | Dropped. A custom framework becomes the generated plugin. |
 
-For any other framework, the command prints a note and leaves it out. Write a [YAML plugin](/plugins/yaml) for it.
+Every framework of i18n-ally has a preset. For an unknown framework id, the command prints a note and leaves it out.
 
 ## Custom framework map
 
