@@ -40,6 +40,8 @@ export interface ResourceSpec {
   readonly format?: string | undefined
   /** Fixed namespace for every matching file. */
   readonly namespace?: string | undefined
+  /** Fixed locale for every matching file, for patterns without `{locale}` (`package.nls.json`). */
+  readonly locale?: string | undefined
   /** Run matching JS/TS files in Node instead of reading them statically. Makes them read-only. */
   readonly execute?: boolean | undefined
 }

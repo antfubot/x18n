@@ -12,7 +12,12 @@ export interface ResourceState {
   readonly content: string
   /** Offset of the content in the file (non-zero for blocks). */
   readonly offset: number
+  /** Keys as the project sees them, after resource transforms. */
   readonly tree: MessageTree
+  /** The tree as stored in the file. Edits work on it. */
+  readonly rawTree: MessageTree
+  /** Maps a key path of `tree` to its path in `rawTree`. */
+  readonly toStored: (path: readonly string[]) => string[]
   readonly ranges: ReadonlyMap<string, NodeRange>
   readonly error: X18nError | undefined
 }

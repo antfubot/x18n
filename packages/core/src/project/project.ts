@@ -139,6 +139,14 @@ export function createProject(options: CreateProjectOptions): Project {
     return joinKey(undefined, [...prefix, ...logical])
   }
 
+  /** Key path to stored path through the transforms that apply to a resource, last first. */
+  function storedPathOf(ctx: { path: string, locale: LocaleCode, namespace: string | undefined }): (path: readonly string[]) => string[] {
+    const active = transforms.filter(transform => transform.applies?.(ctx) !== false)
+    if (active.length === 0)
+      return path => [...path]
+    return path => active.reduceRight<string[]>((current, transform) => transform.toStored(current, ctx), [...path])
+  }
+
   function parseResource(candidate: Candidate, text: string): ResourceState {
     const format = registry.formatFor(candidate.path, candidate.format)
     const id = candidate.block ? `${candidate.path}#${candidate.block.index}` : candidate.path
@@ -154,22 +162,24 @@ export function createProject(options: CreateProjectOptions): Project {
     }
     const content = candidate.block ? text.slice(candidate.block.range.start, candidate.block.range.end) : text
     const offset = candidate.block?.range.start ?? 0
-    const base = { resource, hash: hashText(content), content, offset }
-    if (!format)
-      return { ...base, tree: {}, ranges: new Map(), error: new X18nError('X18N2001', candidate.path) }
     const ctx = { path: candidate.path, locale: candidate.locale, namespace: candidate.namespace, indent: config.write.indent }
+    const base = { resource, hash: hashText(content), content, offset, toStored: storedPathOf(ctx) }
+    if (!format)
+      return { ...base, tree: {}, rawTree: {}, ranges: new Map(), error: new X18nError('X18N2001', candidate.path) }
     try {
       const parsed = format.parse(content, ctx)
       let tree: MessageTree = parsed.tree
-      for (const transform of transforms)
-        tree = transform.read(tree, ctx)
+      for (const transform of transforms) {
+        if (transform.applies?.(ctx) !== false)
+          tree = transform.read(tree, ctx)
+      }
       if (!isMessageTree(tree))
         throw new X18nError('X18N2003', candidate.path)
-      return { ...base, tree, ranges: parsed.ranges ?? new Map(), error: undefined }
+      return { ...base, tree, rawTree: parsed.tree, ranges: parsed.ranges ?? new Map(), error: undefined }
     }
     catch (error) {
       const coded = isX18nError(error) ? error : new X18nError('X18N2002', `${candidate.path}: ${error instanceof Error ? error.message : String(error)}`)
-      return { ...base, tree: {}, ranges: new Map(), error: coded }
+      return { ...base, tree: {}, rawTree: {}, ranges: new Map(), error: coded }
     }
   }
 
@@ -326,7 +336,8 @@ export function createProject(options: CreateProjectOptions): Project {
         for (const [segment, child] of Object.entries(tree)) {
           const path = [...stored, segment]
           const key = keyFor(resource, path)
-          const raw = state.ranges.get(pathId(path))
+          const storedPath = state.toStored(path)
+          const raw = state.ranges.get(pathId(storedPath))
           const range = raw ? { key: shift(raw.key), value: shift(raw.value) } : undefined
           if (range)
             fileNodes.push({ key, range, leaf: isMessageLeaf(child), locale: resource.locale, path: resource.path })
@@ -335,7 +346,7 @@ export function createProject(options: CreateProjectOptions): Project {
             messages.set(key, byLocale)
             const list = byLocale.get(resource.locale) ?? []
             byLocale.set(resource.locale, list)
-            list.push({ key, locale: resource.locale, value: child, resource: resource.id, storedPath: path, range })
+            list.push({ key, locale: resource.locale, value: child, resource: resource.id, storedPath, range })
             if (!keyPaths.has(key)) {
               const logical = path.flatMap(s => s.split('.'))
               keyPaths.set(key, namespaced
@@ -612,6 +623,7 @@ export function createProject(options: CreateProjectOptions): Project {
     usageMatches,
     text: path => fileTexts.get(path) ?? files.get(path)?.text,
     baseOf,
+    toStored: (target, path) => storedPathOf(target)(path),
     resolveNew(locale, namespace) {
       const ctx = { host, config, extensions: [...new Set(registry.formats.flatMap(format => format.extensions))] }
       for (const finder of registry.finders) {

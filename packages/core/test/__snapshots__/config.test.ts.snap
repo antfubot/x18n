@@ -302,6 +302,9 @@ exports[`schemas > config schema 1`] = `
           "format": {
             "type": "string",
           },
+          "locale": {
+            "type": "string",
+          },
           "namespace": {
             "type": "string",
           },
@@ -574,6 +577,9 @@ exports[`schemas > plugin schema 1`] = `
                 "type": "boolean",
               },
               "format": {
+                "type": "string",
+              },
+              "locale": {
                 "type": "string",
               },
               "namespace": {

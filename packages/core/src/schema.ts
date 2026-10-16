@@ -53,6 +53,7 @@ const resourceSpec = v.strictObject({
   pattern: v.string(),
   format: v.optional(v.string()),
   namespace: v.optional(v.string()),
+  locale: v.optional(v.string()),
   execute: v.optional(v.boolean()),
 }) satisfies v.GenericSchema<ResourceSpec>
 

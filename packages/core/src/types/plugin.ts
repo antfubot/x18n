@@ -264,9 +264,16 @@ export interface ResourceTransformContext {
   readonly path: string
 }
 
+/**
+ * Changes how a resource's tree maps to keys, for example Rails' top-level locale key
+ * or Chrome's `{ "name": { "message": "..." } }`. Edits go to the stored paths.
+ */
 export interface ResourceTransform {
+  /** Whether the transform applies to a resource. Default: every resource. */
+  readonly applies?: ((ctx: ResourceTransformContext) => boolean) | undefined
   readonly read: (tree: MessageTree, ctx: ResourceTransformContext) => MessageTree
-  readonly write: (tree: MessageTree, ctx: ResourceTransformContext) => MessageTree
+  /** The path in the file of a key path of the transformed tree. */
+  readonly toStored: (path: readonly string[], ctx: ResourceTransformContext) => string[]
 }
 
 export interface PromptDraft {

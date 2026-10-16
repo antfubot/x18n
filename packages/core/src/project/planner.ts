@@ -31,6 +31,8 @@ export interface PlannerOptions {
   readonly usageMatches: (query: { key?: KeyString, prefix?: KeyString }) => UsageMatch[]
   readonly text: (path: string) => string | undefined
   readonly baseOf: (key: KeyString) => KeyString | undefined
+  /** Stored path of a key path in a (maybe new) resource, through resource transforms. */
+  readonly toStored: (target: { readonly path: string, readonly locale: LocaleCode, readonly namespace: string | undefined }, path: readonly string[]) => string[]
   /** A path for a new resource from the locale finders' `resolveNew`. */
   readonly resolveNew: (locale: LocaleCode, namespace: string | undefined) => string | undefined
   readonly update: (events: readonly FileEvent[]) => Promise<ProjectChange | undefined>
@@ -146,7 +148,7 @@ class PlanBuilder {
   workFor(target: Target): Work {
     let entry = this.work.get(target.id)
     if (!entry) {
-      entry = { target, tree: target.state?.tree ?? {}, ops: [], keyRenames: [], formatOnly: false }
+      entry = { target, tree: target.state?.rawTree ?? {}, ops: [], keyRenames: [], formatOnly: false }
       this.work.set(target.id, entry)
     }
     return entry
@@ -177,8 +179,10 @@ class PlanBuilder {
   }
 
   storedPathFor(entry: Work, relative: readonly string[]): string[] {
-    const flat = isFlatTree(entry.tree) ?? (this.config.keyStyle === 'flat')
-    return flat ? [relative.join('.')] : [...relative]
+    const stored = this.options.toStored(entry.target, relative)
+    // Transforms (Rails, Chrome) fix the nesting; otherwise follow the file's style.
+    const flat = stored.length === relative.length && (isFlatTree(entry.tree) ?? (this.config.keyStyle === 'flat'))
+    return flat ? [stored.join('.')] : stored
   }
 
   createTarget(key: KeyString, locale: LocaleCode): Target {
@@ -284,7 +288,7 @@ class PlanBuilder {
       }
       const entry = this.workFor(this.targetOf(s))
       const flat = m.storedPath.length === 1 && m.storedPath[0]!.includes('.')
-      const next = flat ? [relative.join('.')] : relative
+      const next = flat ? [relative.join('.')] : this.options.toStored(s.resource, relative)
       const sameParent = next.length === m.storedPath.length && next.slice(0, -1).every((segment, i) => segment === m.storedPath[i])
       const last = next.at(-1)!
       if (sameParent && m.range && (flat ? safeFlat : safeSegment).test(last)) {
