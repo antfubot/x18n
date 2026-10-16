@@ -8,7 +8,10 @@ export function placeholders(..._) {}
 
 // #region Variables
 export var braces /* const */
+export var colon /* const */
+export var dollars /* const */
 export var doubleBraces /* const */
+export var fluent /* const */
 export var icu /* const */
 export var linked /* const */
 export var nesting /* const */

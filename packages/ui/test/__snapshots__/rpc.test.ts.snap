@@ -963,6 +963,54 @@ exports[`rpc functions > explains the project 1`] = `
           "resources": 0,
         },
         {
+          "extensions": [
+            "po",
+            "pot",
+          ],
+          "id": "po",
+          "resources": 0,
+        },
+        {
+          "extensions": [
+            "properties",
+          ],
+          "id": "properties",
+          "resources": 0,
+        },
+        {
+          "extensions": [
+            "ftl",
+          ],
+          "id": "ftl",
+          "resources": 0,
+        },
+        {
+          "extensions": [
+            "ini",
+          ],
+          "id": "ini",
+          "resources": 0,
+        },
+        {
+          "extensions": [
+            "php",
+          ],
+          "id": "php",
+          "resources": 0,
+        },
+        {
+          "extensions": [
+            "js",
+            "mjs",
+            "cjs",
+            "ts",
+            "mts",
+            "cts",
+          ],
+          "id": "js",
+          "resources": 0,
+        },
+        {
           "extensions": [],
           "id": "sfc-json",
           "resources": 0,
@@ -985,6 +1033,12 @@ exports[`rpc functions > explains the project 1`] = `
         "x18n:format-jsonc",
         "x18n:format-json5",
         "x18n:format-yaml",
+        "x18n:format-po",
+        "x18n:format-properties",
+        "x18n:format-ftl",
+        "x18n:format-ini",
+        "x18n:format-php",
+        "x18n:format-js",
         "x18n:finder-pattern",
         "x18n:scanner-js",
         "x18n:scanner-vue",
@@ -1007,7 +1061,23 @@ exports[`rpc functions > explains the project 1`] = `
           "reason": "detected",
         },
         {
+          "name": "fluent-vue",
+          "reason": "not-detected",
+        },
+        {
+          "name": "i18next-shopify",
+          "reason": "not-detected",
+        },
+        {
           "name": "react-i18next",
+          "reason": "not-detected",
+        },
+        {
+          "name": "next-translate",
+          "reason": "not-detected",
+        },
+        {
+          "name": "next-international",
           "reason": "not-detected",
         },
         {
@@ -1027,7 +1097,71 @@ exports[`rpc functions > explains the project 1`] = `
           "reason": "not-detected",
         },
         {
+          "name": "ngx-translate",
+          "reason": "not-detected",
+        },
+        {
+          "name": "transloco",
+          "reason": "not-detected",
+        },
+        {
+          "name": "lingui",
+          "reason": "not-detected",
+        },
+        {
+          "name": "ember-intl",
+          "reason": "not-detected",
+        },
+        {
+          "name": "polyglot",
+          "reason": "not-detected",
+        },
+        {
+          "name": "globalize",
+          "reason": "not-detected",
+        },
+        {
+          "name": "i18n-tag",
+          "reason": "not-detected",
+        },
+        {
+          "name": "i18n-js",
+          "reason": "not-detected",
+        },
+        {
+          "name": "ui5",
+          "reason": "not-detected",
+        },
+        {
+          "name": "chrome-extension",
+          "reason": "not-detected",
+        },
+        {
           "name": "vscode-extension",
+          "reason": "not-detected",
+        },
+        {
+          "name": "laravel",
+          "reason": "not-detected",
+        },
+        {
+          "name": "php-joomla",
+          "reason": "not-detected",
+        },
+        {
+          "name": "php-gettext",
+          "reason": "not-detected",
+        },
+        {
+          "name": "ruby-rails",
+          "reason": "not-detected",
+        },
+        {
+          "name": "jekyll",
+          "reason": "not-detected",
+        },
+        {
+          "name": "flutter",
           "reason": "not-detected",
         },
         {

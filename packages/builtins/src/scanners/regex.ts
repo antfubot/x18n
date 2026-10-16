@@ -57,19 +57,22 @@ export function regex(specs: readonly RegexScannerSpec[] = [], id = 'regex'): Pl
   }
 }
 
-/** Regions after each match of `pattern` (group 1 = namespace), up to the next match: i18n-ally `scopeRangeRegex`. */
-export function regexScopes(pattern: string, id = 'scopes'): Plugin {
+/**
+ * Regions after each match of `pattern` (group 1 = namespace, or key prefix with `as: 'keyPrefix'`),
+ * up to the next match: i18n-ally `scopeRangeRegex`.
+ */
+export function regexScopes(pattern: string, id = 'scopes', options: { readonly as?: 'namespace' | 'keyPrefix', readonly extensions?: readonly string[] } = {}): Plugin {
   const re = new RegExp(pattern, 'g')
   return {
     name: `x18n:scanner-${id}`,
     scanners: [{
       id,
-      extensions: ['*'],
+      extensions: options.extensions ?? ['*'],
       scan(file) {
         const matches = [...file.text.matchAll(re)]
         const scopes: Scope[] = matches.map((match, i) => ({
           range: { start: match.index + match[0].length, end: matches[i + 1]?.index ?? file.text.length },
-          namespace: match[1],
+          ...options.as === 'keyPrefix' ? { keyPrefix: match[1] } : { namespace: match[1] },
         }))
         return { usages: [], scopes }
       },

@@ -8,7 +8,10 @@ export declare function placeholders(..._: PlaceholderSyntax[]): Plugin;
 
 // #region Variables
 export declare const braces: PlaceholderSyntax;
+export declare const colon: PlaceholderSyntax;
+export declare const dollars: PlaceholderSyntax;
 export declare const doubleBraces: PlaceholderSyntax;
+export declare const fluent: PlaceholderSyntax;
 export declare const icu: PlaceholderSyntax;
 export declare const linked: PlaceholderSyntax;
 export declare const nesting: PlaceholderSyntax;

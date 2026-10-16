@@ -17,6 +17,7 @@ export declare function compilePattern(_: string, _: readonly string[]): Compile
 export declare function guessResources(_: FinderContext): Promise<ResourceSpec[]>;
 export declare function pattern(): Plugin;
 export declare function sfcBlocks(): Plugin;
+export declare function sfcFluentBlocks(): Plugin;
 // #endregion
 
 // #region Variables

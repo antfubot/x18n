@@ -29,6 +29,13 @@ export const percentBraces: PlaceholderSyntax = byRegex('percent-braces', /%\{(\
 export const printf: PlaceholderSyntax = byRegex('printf', /%(?:(\d+)\$)?[-+ 0#]*(?:[1-9]\d*)?(?:\.\d+)?[sdifoxXeEgGc@]/g, '%s')
 /** `@:key` and `@.modifier:key`: vue-i18n linked messages. */
 export const linked: PlaceholderSyntax = { ...byRegex('linked', /@(?:\.\w+)?:\(?([\w.-]+)\)?/g, '@:key'), reference: true }
+/** `{ $name }`: Fluent variables. */
+export const fluent: PlaceholderSyntax = byRegex('fluent', /\{\s*\$([\w-]+)(?:\s[^}]*)?\}/g, '{ $name }')
+/** `:name`: Laravel. */
+export const colon: PlaceholderSyntax = byRegex('colon', /(?<![\w:]):([a-z_]\w*)/gi, ':name')
+/** `$name$`: Chrome extension messages. */
+export const dollars: PlaceholderSyntax = byRegex('dollars', /\$(\w+)\$/g, '$name$')
+
 /** `$t(key)` nesting in i18next. */
 export const nesting: PlaceholderSyntax = { ...byRegex('nesting', /\$t\(([\w.:-]+)(?:,[^)]*)?\)/g, '$t(key)'), reference: true }
 

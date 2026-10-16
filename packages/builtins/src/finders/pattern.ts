@@ -90,9 +90,10 @@ export function compilePattern(pattern: string, extensions: readonly string[]): 
   return {
     glob,
     match(path) {
-      const groups = regex.exec(path)?.groups
-      if (!groups)
+      const found = regex.exec(path)
+      if (!found)
         return undefined
+      const groups = found.groups ?? {}
       const extension = groups.ext ?? path.slice(path.lastIndexOf('.') + 1)
       return {
         locale: groups.locale,
@@ -133,12 +134,33 @@ export async function guessResources(ctx: FinderContext): Promise<ResourceSpec[]
   return specs
 }
 
+async function findBySpecs(ctx: FinderContext, specs: readonly ResourceSpec[], guessed: boolean): Promise<ResourceCandidate[]> {
+  const out: ResourceCandidate[] = []
+  for (const spec of specs) {
+    const compiled = compilePattern(spec.pattern, ctx.extensions)
+    // A pattern without a locale token holds the source locale (`package.nls.json`, `i18n.properties`).
+    const fixed = spec.locale ?? (spec.pattern.includes('{locale') ? undefined : ctx.config.sourceLocale)
+    const paths = await ctx.host.glob([compiled.glob], { ignore: ['**/node_modules/**'], gitignore: false })
+    for (const path of paths) {
+      const matched = compiled.match(path)
+      if (!matched)
+        continue
+      const locale = fixed ?? matched.locale ?? (spec.pattern.includes('{locale?}') ? ctx.config.sourceLocale : undefined)
+      // A guessed `{locale}` must look like a locale code, so `locales/index.ts` is not a resource.
+      if (!locale || (guessed && !isLocaleCode(locale)))
+        continue
+      out.push({ path, locale, namespace: spec.namespace ?? matched.namespace, format: spec.format, readonly: spec.execute === true })
+    }
+  }
+  return out
+}
+
 export const patternFinder: LocaleFinder = {
   id: 'pattern',
   resolveNew(target, ctx) {
     for (const spec of ctx.config.resources) {
       const wantsNamespace = /\{namespaces?\}/.test(spec.pattern)
-      if (wantsNamespace !== (target.namespace !== undefined) || spec.execute)
+      if (wantsNamespace !== (target.namespace !== undefined) || spec.execute || !spec.pattern.includes('{locale'))
         continue
       const path = spec.pattern
         .replace(/^\.\//, '')
@@ -152,28 +174,13 @@ export const patternFinder: LocaleFinder = {
     return undefined
   },
   async find(ctx) {
-    const specs = ctx.config.resources.length > 0 ? ctx.config.resources : await guessResources(ctx)
-    const out: ResourceCandidate[] = []
-    for (const spec of specs) {
-      const compiled = compilePattern(spec.pattern, ctx.extensions)
-      const paths = await ctx.host.glob([compiled.glob], { ignore: ['**/node_modules/**'], gitignore: false })
-      for (const path of paths) {
-        const matched = compiled.match(path)
-        if (!matched)
-          continue
-        const locale = matched.locale ?? ctx.config.sourceLocale
-        if (!matched.locale && !spec.pattern.includes('{locale?}'))
-          continue
-        out.push({
-          path,
-          locale,
-          namespace: spec.namespace ?? matched.namespace,
-          format: spec.format,
-          readonly: spec.execute === true,
-        })
-      }
-    }
-    return out
+    const configured = ctx.config.resources
+    const found = configured.length > 0 ? await findBySpecs(ctx, configured, false) : []
+    // Preset defaults that match nothing fall back to the guess, as without a config.
+    const fromUser = ctx.config.origins.resources === 'user' || ctx.config.origins.resources === 'parent'
+    if (found.length > 0 || fromUser)
+      return found
+    return findBySpecs(ctx, await guessResources(ctx), true)
   },
 }
 

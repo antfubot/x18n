@@ -691,11 +691,13 @@ export interface ResourceSpec {
   readonly pattern: string;
   readonly format?: string | undefined;
   readonly namespace?: string | undefined;
+  readonly locale?: string | undefined;
   readonly execute?: boolean | undefined;
 }
 export interface ResourceTransform {
+  readonly applies?: ((_: ResourceTransformContext) => boolean) | undefined;
   readonly read: (_: MessageTree, _: ResourceTransformContext) => MessageTree;
-  readonly write: (_: MessageTree, _: ResourceTransformContext) => MessageTree;
+  readonly toStored: (_: readonly string[], _: ResourceTransformContext) => string[];
 }
 export interface ResourceTransformContext {
   readonly locale: LocaleCode;

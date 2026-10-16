@@ -7,7 +7,7 @@ export function compileUsagePattern(_) {}
 export function js() {}
 export function loadParser() {}
 export function regex(_, _) {}
-export function regexScopes(_, _) {}
+export function regexScopes(_, _, _) {}
 export function scanSource(_, _, _) {}
 export function scanWithRegex(_, _) {}
 export function svelte() {}

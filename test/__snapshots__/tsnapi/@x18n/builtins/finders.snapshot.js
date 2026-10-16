@@ -6,6 +6,7 @@ export function compilePattern(_, _) {}
 export async function guessResources(_) {}
 export function pattern() {}
 export function sfcBlocks() {}
+export function sfcFluentBlocks() {}
 // #endregion
 
 // #region Variables

@@ -82,7 +82,8 @@ class FileScan {
   readonly hardStrings: HardString[] = []
   readonly frames: Map<string, Binding>[] = [new Map()]
   readonly constants = new Map<string, Node>()
-  readonly declared = new Map<string, CallSpec>()
+  /** Several specs may share a callee, for example lingui `t('id')` and `t({ id })`. */
+  readonly declared = new Map<string, CallSpec[]>()
   readonly factories = new Map<string, CallSpec[]>()
   readonly typed = new Map<string, CallSpec>()
   readonly consumed = new Set<number>()
@@ -98,10 +99,10 @@ class FileScan {
         else if (spec.types?.length) {
           for (const type of spec.types)
             this.typed.set(type, spec)
-          this.declared.set(name, spec)
+          this.declare(name, spec)
         }
         else {
-          this.declared.set(name, spec)
+          this.declare(name, spec)
         }
       }
     }
@@ -111,23 +112,33 @@ class FileScan {
     return { start: range.start + this.offset, end: range.end + this.offset }
   }
 
+  declare(name: string, spec: CallSpec): void {
+    const list = this.declared.get(name) ?? []
+    this.declared.set(name, list)
+    list.push(spec)
+  }
+
   lookup(name: string): Binding | undefined {
+    return this.lookupAll(name)[0]
+  }
+
+  lookupAll(name: string): Binding[] {
     for (let i = this.frames.length - 1; i >= 0; i--) {
       const binding = this.frames[i]!.get(name)
       if (binding)
-        return binding
+        return [binding]
     }
-    const spec = this.declared.get(name)
-    if (spec)
-      return { spec }
+    const specs = this.declared.get(name)
+    if (specs)
+      return specs.map(spec => ({ spec }))
     // `t.rich` from a factory that returns `t.rich`, bound as `t`.
     const dot = name.indexOf('.')
     if (dot > 0) {
       const root = this.lookup(name.slice(0, dot))
       if (root?.spec.returns?.some(ret => ret.endsWith(name.slice(dot))))
-        return root
+        return [root]
     }
-    return undefined
+    return []
   }
 
   bind(name: string, binding: Binding): void {
@@ -242,13 +253,17 @@ class FileScan {
   }
 
   handleCall(name: string, args: readonly ArgValue[]): boolean {
-    const binding = this.lookup(name)
-    if (!binding || binding.spec.factory)
-      return false
-    const namespace = binding.spec.namespace ? this.stringArg(this.argValues(args, binding.spec.namespace, 1)[0]) : undefined
-    for (const value of this.argValues(args, binding.spec.key, 0))
-      this.addKey(value, binding, namespace)
-    return true
+    const bindings = this.lookupAll(name).filter(binding => !binding.spec.factory)
+    for (const binding of bindings) {
+      const namespace = binding.spec.namespace ? this.stringArg(this.argValues(args, binding.spec.namespace, 1)[0]) : undefined
+      for (const value of this.argValues(args, binding.spec.key, 0)) {
+        // With several specs per callee, only the one whose key position holds a key counts.
+        if (bindings.length > 1 && !('props' in value) && unwrap(value).type === 'ObjectExpression')
+          continue
+        this.addKey(value, binding, namespace)
+      }
+    }
+    return bindings.length > 0
   }
 
   call(node: CallExpression): void {
@@ -343,7 +358,7 @@ class FileScan {
 
   importSpecifier(node: Extract<Node, { type: 'ImportSpecifier' }>): void {
     const imported = node.imported.type === 'Identifier' ? node.imported.name : node.imported.value
-    const spec = this.declared.get(imported)
+    const spec = this.declared.get(imported)?.[0]
     if (spec && imported !== node.local.name)
       this.bind(node.local.name, { spec })
   }

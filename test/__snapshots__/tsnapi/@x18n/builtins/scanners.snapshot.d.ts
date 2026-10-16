@@ -18,7 +18,10 @@ export declare function compileUsagePattern(_: string): RegExp;
 export declare function js(): Plugin;
 export declare function loadParser(): Promise<ParseSync>;
 export declare function regex(_?: readonly RegexScannerSpec[], _?: string): Plugin;
-export declare function regexScopes(_: string, _?: string): Plugin;
+export declare function regexScopes(_: string, _?: string, _?: {
+  readonly as?: "namespace" | "keyPrefix";
+  readonly extensions?: readonly string[];
+}): Plugin;
 export declare function scanSource(_: ParseSync, _: string, _: ScanSourceOptions): ScanResult;
 export declare function scanWithRegex(_: string, _: readonly RegExp[]): UsageCandidate[];
 export declare function svelte(): Plugin;

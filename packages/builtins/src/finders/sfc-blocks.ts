@@ -73,3 +73,30 @@ export function sfcBlocks(): Plugin {
     }],
   }
 }
+
+/** fluent-vue `<fluent locale="en">` blocks in Vue SFCs, read with the `ftl` format. */
+export function sfcFluentBlocks(): Plugin {
+  return {
+    name: 'x18n:finder-sfc-fluent-blocks',
+    localeFinders: [{
+      id: 'sfc-fluent-blocks',
+      async find(ctx) {
+        const files = await ctx.host.glob(['**/*.vue'], { ignore: ctx.config.usage.exclude, gitignore: true })
+        const { parse } = await loadVueCompiler()
+        const out: ResourceCandidate[] = []
+        for (const path of files) {
+          const text = await ctx.host.readFile(path)
+          if (!text?.includes('<fluent'))
+            continue
+          parse(text, { filename: path, sourceMap: false }).descriptor.customBlocks.forEach((block, index) => {
+            if (block.type === 'fluent' && typeof block.attrs.locale === 'string') {
+              const range = { start: block.loc.start.offset, end: block.loc.end.offset }
+              out.push({ path, locale: block.attrs.locale, namespace: undefined, format: 'ftl', block: { index, range, lang: 'ftl' } })
+            }
+          })
+        }
+        return out
+      },
+    }],
+  }
+}
