@@ -590,7 +590,9 @@ export function createProject(options: CreateProjectOptions): Project {
       const before = idx()
       const paths = new Set(events.map(event => event.path))
       const resourcePaths = new Set([...resourceStates.values()].map(state => state.resource.path))
-      const structural = events.some(event => event.type !== 'change') || events.some(event => !resourcePaths.has(event.path) && registry.formatFor(event.path) !== undefined)
+      // An edited source file stays a source file; only other files with a format may have become resources.
+      const maybeResource = (path: string): boolean => !resourcePaths.has(path) && registry.formatFor(path) !== undefined && !usageEligible(path)
+      const structural = events.some(event => event.type !== 'change' || maybeResource(event.path))
       const touchesResources = structural || [...paths].some(path => resourcePaths.has(path))
       if (touchesResources) {
         const candidates = structural ? await discover() : [...resourceStates.values()].map(state => ({ ...state.resource, format: state.resource.format === 'unknown' ? undefined : state.resource.format }))

@@ -2,7 +2,7 @@ import type { MessageConnection } from 'vscode-jsonrpc/node'
 import type { Location, PublishDiagnosticsParams, WorkspaceEdit } from 'vscode-languageserver/node'
 import { cp, mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
 import { PassThrough } from 'node:stream'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { applyTextEdits, createLineIndex } from '@x18n/core'
@@ -18,6 +18,7 @@ let client: MessageConnection
 const diagnostics = new Map<string, PublishDiagnosticsParams['diagnostics']>()
 const disposers: (() => void)[] = []
 
+const posixRelative = (file: string): string => relative(root, file).replace(/\\/g, '/')
 const uri = (path: string): string => pathToFileURL(join(root, path)).href
 
 async function text(path: string): Promise<string> {
@@ -30,7 +31,7 @@ async function position(path: string, needle: string, delta = 1): Promise<{ line
 }
 
 function relativeOf(location: Location): string {
-  return fileURLToPath(location.uri).slice(root.length + 1)
+  return posixRelative(fileURLToPath(location.uri))
 }
 
 beforeAll(async () => {
@@ -99,7 +100,7 @@ describe('language server', () => {
     for (const change of edit.documentChanges ?? []) {
       if (!('textDocument' in change))
         continue
-      const path = fileURLToPath(change.textDocument.uri).slice(root.length + 1)
+      const path = posixRelative(fileURLToPath(change.textDocument.uri))
       const content = await text(path)
       const index = createLineIndex(content)
       changed.set(path, applyTextEdits(content, change.edits.map(e => ({ range: { start: index.offset(e.range.start), end: index.offset(e.range.end) }, text: 'newText' in e ? e.newText : '' }))))

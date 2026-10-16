@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process'
 import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { version } from '../package.json' with { type: 'json' }
@@ -158,7 +158,7 @@ describe('x18n binary', () => {
 
   it('keeps the JSON contract of every read command', async () => {
     const dir = await fixture('vue-i18n')
-    const name = dir.split('/').at(-1)!
+    const name = basename(dir)
     for (const args of [['status'], ['keys', '--values'], ['get', 'app.greeting'], ['usages'], ['locales'], ['check'], ['prompt', 'translate', '--to', 'de', '--format', 'json']]) {
       const result = await x18n(dir, [...args, '--json'])
       expect(result.stdout.replaceAll(name, '<fixture>')).toMatchSnapshot(args.join(' '))

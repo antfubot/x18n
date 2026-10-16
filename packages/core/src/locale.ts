@@ -33,6 +33,8 @@ const defaultRegions: Readonly<Record<string, string>> = {
   zh: 'CN',
 }
 
+const pluralOrder: readonly Intl.LDMLPluralRule[] = ['zero', 'one', 'two', 'few', 'many', 'other']
+
 function flagOf(region: string): string | undefined {
   if (!/^[A-Z]{2}$/.test(region))
     return undefined
@@ -62,7 +64,9 @@ export function parseLocaleInfo(code: LocaleCode): LocaleInfo {
   }
   const tag = [language, script, region].filter(Boolean).join('-')
   const displayName = language ? safe(() => new Intl.DisplayNames(['en'], { type: 'language' }).of(tag)) : undefined
-  const pluralCategories = (language && safe(() => new Intl.PluralRules(tag).resolvedOptions().pluralCategories)) || ['other' as const]
+  // CLDR order; Node versions disagree on the order `resolvedOptions` returns.
+  const found = language ? safe(() => new Intl.PluralRules(tag).resolvedOptions().pluralCategories) : undefined
+  const pluralCategories = found ? pluralOrder.filter(category => found.includes(category)) : ['other' as const]
   const flagRegion = region ?? (language ? defaultRegions[language] : undefined)
   return {
     code,
